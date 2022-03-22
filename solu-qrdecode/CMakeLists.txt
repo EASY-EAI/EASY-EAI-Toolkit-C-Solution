@@ -34,6 +34,11 @@ link_directories(${toolkit_root}/algorithm_api/qrdecode)
 link_directories(${toolkit_root}/common_api/system_opt)
 link_directories(${toolkit_root}/peripheral_api/camera)
 link_directories(${toolkit_root}/peripheral_api/display)
+# -l
+LINK_LIBRARIES( qrdecode zbar )
+LINK_LIBRARIES( system_opt )
+LINK_LIBRARIES( display drm rga )
+LINK_LIBRARIES( camera rkfacial rkisp_api )
 # ======================== easyeai_api =========================
 
 
@@ -55,7 +60,7 @@ aux_source_directory(./src dir_srcs)
 #--------------------------
 add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
 target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-target_link_libraries(${CURRENT_FOLDER} pthread qrdecode zbar display drm rga camera rkfacial rkisp_api system_opt 
+target_link_libraries(${CURRENT_FOLDER} pthread 
     -lopencv_calib3d 
     -lopencv_core 
     -lopencv_dnn 

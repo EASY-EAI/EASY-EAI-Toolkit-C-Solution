@@ -26,19 +26,26 @@ set(api_inc
    ${toolkit_root}/algorithm_api/qrdecode
    ${toolkit_root}/common_api/system_opt
    ${toolkit_root}/common_api/ini_wrapper
-   ${toolkit_root}/netProtocol_api/rtsp
    ${toolkit_root}/media_api/frame_queue
    ${toolkit_root}/media_api/endeCode_api
+   ${toolkit_root}/netProtocol_api/rtsp
    ${toolkit_root}/peripheral_api/display
    )
 # -L
 link_directories(${toolkit_root}/algorithm_api/qrdecode)
 link_directories(${toolkit_root}/common_api/system_opt)
 link_directories(${toolkit_root}/common_api/ini_wrapper)
-link_directories(${toolkit_root}/netProtocol_api/rtsp)
 link_directories(${toolkit_root}/media_api/frame_queue)
 link_directories(${toolkit_root}/media_api/endeCode_api)
+link_directories(${toolkit_root}/netProtocol_api/rtsp)
 link_directories(${toolkit_root}/peripheral_api/display)
+# -l
+LINK_LIBRARIES( qrdecode zbar )
+LINK_LIBRARIES( system_opt )
+LINK_LIBRARIES( ini_wrapper ini )
+LINK_LIBRARIES( frame_queue endeCode_api rockchip_mpp )
+LINK_LIBRARIES( rtsp liveMedia crypto ssl BasicUsageEnvironment UsageEnvironment groupsock )
+LINK_LIBRARIES( display drm )
 # ======================== easyeai_api =========================
 
 
@@ -64,12 +71,4 @@ aux_source_directory(./src dir_srcs)
 #--------------------------
 add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
 target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-target_link_libraries(${CURRENT_FOLDER} pthread 
-    rockchip_mpp 
-    display drm
-    qrdecode zbar 
-    rtsp liveMedia crypto ssl BasicUsageEnvironment UsageEnvironment groupsock 
-    frame_queue endeCode_api 
-    ini_wrapper ini 
-    system_opt 
-    )	#-l
+target_link_libraries(${CURRENT_FOLDER} pthread )	#-l
