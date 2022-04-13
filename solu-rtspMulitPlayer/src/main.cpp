@@ -269,7 +269,7 @@ int main(int sdwArgc, char **pcArg)
         int chnNum = 0;
         if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum))
         {
-            // 2.1 创建播放器 x 1个，
+            // 2.1 创建播放器 x 1个
         	Player *pPlayer = NULL;
         	pPlayer = new Player(chnNum);
             if(NULL == pPlayer){
@@ -284,6 +284,8 @@ int main(int sdwArgc, char **pcArg)
                 sprintf(chnId, "%d", i);
                 CreateSignalProcess(PROCESS_RTSPCLIENT_NAME, &st_TaskInfo, chnId);
             }
+        }else{
+			return -1;
         }
     
     /* 取流器子程进入此分支 */

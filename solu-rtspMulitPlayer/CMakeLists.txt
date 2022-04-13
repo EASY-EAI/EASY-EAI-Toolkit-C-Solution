@@ -41,9 +41,10 @@ link_directories(${toolkit_root}/netProtocol_api/rtsp)
 link_directories(${toolkit_root}/peripheral_api/display)
 # -l
 LINK_LIBRARIES( qrdecode zbar )
-LINK_LIBRARIES( system_opt )
+LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( ini_wrapper ini )
-LINK_LIBRARIES( frame_queue endeCode_api rockchip_mpp )
+LINK_LIBRARIES( frame_queue )
+LINK_LIBRARIES( endeCode_api rockchip_mpp )
 LINK_LIBRARIES( rtsp liveMedia crypto ssl BasicUsageEnvironment UsageEnvironment groupsock )
 LINK_LIBRARIES( display drm )
 # ======================== easyeai_api =========================
@@ -71,4 +72,4 @@ aux_source_directory(./src dir_srcs)
 #--------------------------
 add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
 target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-target_link_libraries(${CURRENT_FOLDER} pthread )	#-l
+target_link_libraries(${CURRENT_FOLDER} )	#-l

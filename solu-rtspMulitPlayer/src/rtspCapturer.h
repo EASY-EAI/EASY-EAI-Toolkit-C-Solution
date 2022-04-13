@@ -1,7 +1,7 @@
 #ifndef __RTSPCAPTURER_H__
 #define __RTSPCAPTURER_H__
 
-#define RTSP_CLIENT_PATH "/userdata/Demo/rtspClient.ini"
+#define RTSP_CLIENT_PATH "./rtspClient.ini"
 
 
 class RtspCapturer

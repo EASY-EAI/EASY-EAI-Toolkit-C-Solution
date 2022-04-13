@@ -21,6 +21,12 @@ How to use：
 
 important update log:
 ---
+> 2022-04-13 : 
+> * Release easyeai-c-solution-0.1.2
+>   * [new] solution - face Detect
+>   * [new] solution - face Recognition
+>   * [new] solution - person Detect
+>
 > 2022-03-21 : 
 > * Release easyeai-c-solution-0.1.1
 >   * [new] solution - rtspMulitPlayer
