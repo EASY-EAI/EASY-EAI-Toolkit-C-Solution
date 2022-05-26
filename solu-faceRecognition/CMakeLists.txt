@@ -24,6 +24,7 @@ set(toolkit_root ${CMAKE_CURRENT_SOURCE_DIR}/../easyeai-api)
 # -I
 set(api_inc
    ${CMAKE_SYSROOT}/usr/include/rkfacial
+   ${toolkit_root}/algorithm_api/geometry
    ${toolkit_root}/algorithm_api/face_detect
    ${toolkit_root}/algorithm_api/face_alignment
    ${toolkit_root}/algorithm_api/face_recognition
@@ -32,6 +33,7 @@ set(api_inc
    ${toolkit_root}/peripheral_api/display
    )
 # -L
+link_directories(${toolkit_root}/algorithm_api/geometry)
 link_directories(${toolkit_root}/algorithm_api/face_detect)
 link_directories(${toolkit_root}/algorithm_api/face_alignment)
 link_directories(${toolkit_root}/algorithm_api/face_recognition)
@@ -39,11 +41,12 @@ link_directories(${toolkit_root}/common_api/system_opt)
 link_directories(${toolkit_root}/peripheral_api/camera)
 link_directories(${toolkit_root}/peripheral_api/display)
 # -l
+LINK_LIBRARIES( geometry )
 LINK_LIBRARIES( face_detect rknn_api )
 LINK_LIBRARIES( face_alignment rknn_api )
 LINK_LIBRARIES( face_recognition rknn_api )
-LINK_LIBRARIES( system_opt )
-LINK_LIBRARIES( display drm rga )
+LINK_LIBRARIES( system_opt pthread )
+LINK_LIBRARIES( display easymedia rga )
 LINK_LIBRARIES( camera rkfacial rkisp_api )
 # ======================== easyeai_api =========================
 
@@ -70,7 +73,7 @@ aux_source_directory(./src/keyEvent dir_srcs)
 #--------------------------
 add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
 target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-target_link_libraries(${CURRENT_FOLDER} pthread 
+target_link_libraries(${CURRENT_FOLDER} 
     -lsqlite3 
     -lopencv_calib3d 
     -lopencv_core 

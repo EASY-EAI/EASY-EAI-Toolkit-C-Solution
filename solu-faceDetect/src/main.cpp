@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 	// 3.显示初始化
 #define SCREEN_WIDTH	720
 #define SCREEN_HEIGHT	1280
-    ret = disp_init(SCREEN_WIDTH, SCREEN_HEIGHT);
+	ret = disp_init(SCREEN_WIDTH, SCREEN_HEIGHT);
 	if (ret) {
 		printf("error: %s, %d\n", __func__, __LINE__);
 		goto exit1;
@@ -137,7 +137,7 @@ int main(int argc, char **argv)
 				cv::circle(image, cv::Point((int)Result.result[i].landmarks[j].x, (int)Result.result[i].landmarks[j].y), 2, cv::Scalar(0, 255, 0), 3, 8);
 			}
 		}
-        disp_commit(image.data, 0, 0);
+        disp_commit(image.data, IMAGE_SIZE);
 		
         usleep(20*1000);
 	}

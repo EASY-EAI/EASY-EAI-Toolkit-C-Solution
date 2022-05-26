@@ -36,8 +36,8 @@ link_directories(${toolkit_root}/peripheral_api/camera)
 link_directories(${toolkit_root}/peripheral_api/display)
 # -l
 LINK_LIBRARIES( person_detect rknn_api )
-LINK_LIBRARIES( system_opt )
-LINK_LIBRARIES( display drm rga )
+LINK_LIBRARIES( system_opt pthread )
+LINK_LIBRARIES( display easymedia rga )
 LINK_LIBRARIES( camera rkfacial rkisp_api )
 # ======================== easyeai_api =========================
 
@@ -60,7 +60,7 @@ aux_source_directory(./src dir_srcs)
 #--------------------------
 add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
 target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-target_link_libraries(${CURRENT_FOLDER} pthread 
+target_link_libraries(${CURRENT_FOLDER} 
     -lopencv_calib3d 
     -lopencv_core 
     -lopencv_dnn 

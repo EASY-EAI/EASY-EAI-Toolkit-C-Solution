@@ -21,6 +21,12 @@ How to use：
 
 important update log:
 ---
+> 2022-05-26 : 
+> * Release easyeai-c-solution-0.1.3
+>   * [new] solution - helmet Detect
+>   * [new] solution - EAI Box
+>   * [update] solution - rtspMulitPlayer
+>
 > 2022-04-13 : 
 > * Release easyeai-c-solution-0.1.2
 >   * [new] solution - face Detect

@@ -1,8 +1,6 @@
 #ifndef __RTSPCAPTURER_H__
 #define __RTSPCAPTURER_H__
 
-#define RTSP_CLIENT_PATH "./rtspClient.ini"
-
 
 class RtspCapturer
 {
@@ -25,6 +23,6 @@ private:
 	int bObjIsInited;
 };
 
-
+extern int rtspSignalInit(int argc, char** argv);
 
 #endif

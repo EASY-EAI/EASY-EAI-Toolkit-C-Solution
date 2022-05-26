@@ -33,9 +33,9 @@ struct qrcode_info {
 };
 
 /* 
- * ¶şÎ¬Âë¼ì²âÔËĞĞº¯Êı
- * src:ÊäÈë²ÎÊı, Opencv Mat¸ñÊ½Í¼Ïñ
- * p_info£ºÊä³ö²ÎÊı, ¶şÎ¬Âë¼ì²âµÄ½á¹ûÊä³ö
+ * äºŒç»´ç æ£€æµ‹è¿è¡Œå‡½æ•°
+ * src:è¾“å…¥å‚æ•°, Opencv Matæ ¼å¼å›¾åƒ
+ * p_infoï¼šè¾“å‡ºå‚æ•°, äºŒç»´ç æ£€æµ‹çš„ç»“æœè¾“å‡º
  */
 int qr_decode(cv::Mat src, struct qrcode_info *p_info);
 

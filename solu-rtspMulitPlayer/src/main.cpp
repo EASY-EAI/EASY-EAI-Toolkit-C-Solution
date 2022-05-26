@@ -5,25 +5,14 @@
 #include <string>
 //=====================   C   =====================
 #include "system.h"
+#include "ipcData.h"
+#include "config.h"
 //=====================  SDK  =====================
 #include "system_opt.h"
 #include "ini_wrapper.h"
 //=====================  PRJ  =====================
-#include "rtspCapturer.h"
-#include "player.h"
-
-typedef void * (*OSATaskEntryFunc)(void *);
-//任务对象描述结构体
-typedef struct 
-{
-    pthread_t	pthTaskHandle;			//任务句柄	
-    OSATaskEntryFunc pTaskEntryFunc;	//任务入口函数
-    uint32_t dwTaskPri;					//任务优先级
-    uint32_t dwStackSize;				//任务栈空间大小
-    uint32_t dwDetached;				//任务是否分离标志
-    void * pvParam;						//传递给入口函数的参数
-    void * pvRval;						//任务退出状态
-}OS_TASK_DSC_S;
+#include "capturer/rtspCapturer.h"
+#include "player/player.h"
 
 #define TASK_INFO_NAME_LEN 256
 #define TASK_RESPAWN_RETRY_MAX_TIMES 4 // 子进程崩溃后重启重试次数
@@ -39,24 +28,18 @@ struct st_Task_Info
 	int32_t dwExitStatus;
 };
 
+#define PROGRAM_NAME_LEN 64 //主进程名
+#define TASK_MAX_NUMBER 20  //子进程总数
 struct st_SysTask
 {
+    char progName[PROGRAM_NAME_LEN];
 	uint32_t dwTaskNum;
-	struct st_Task_Info st_task[20];
+	struct st_Task_Info st_task[TASK_MAX_NUMBER];
 };
 
-static void OSTaskDelay(uint32_t dwMillisec)
-{
-	struct timespec delayTime, elaspedTime;
-  
-	delayTime.tv_sec  = dwMillisec / 1000;
-	delayTime.tv_nsec = (dwMillisec % 1000) * 1000000;
 
-	nanosleep(&delayTime, &elaspedTime);
-}
-
+#define PROCESS_PLAYER_NAME   "player"
 #define PROCESS_RTSPCLIENT_NAME "rtspChannel"
-
 
 void ShowStatus( pid_t pid, int32_t status )
 {
@@ -64,18 +47,14 @@ void ShowStatus( pid_t pid, int32_t status )
 
   printf( "[show_status]: pid = %u => ", pid );
 
-  if ( WIFEXITED( status ) )
-  {
+  if ( WIFEXITED( status ) ) {
     flag = 0;
     printf( "true if the child terminated normally, that is, "
     "by calling exit() or _exit(), or "
     "by returning from main().\n" );
 	printf("子进程正常结束!\n");
-
   }
-
-  if ( WEXITSTATUS( status ) )
-  {
+  if ( WEXITSTATUS( status ) ) {
     flag = 0;
     printf( "evaluates to the least significant eight bits of the "
     "return code of  the  child  which terminated, which may "
@@ -84,30 +63,21 @@ void ShowStatus( pid_t pid, int32_t status )
     "return  statement  in  the main program.  This macro can only be"
     " evaluated if WIFEXITED returned true. \n" );
 	printf("子进程exit()返回的结束代码:[%d]\n",WEXITSTATUS( status ));
-	
   }
-
-  if ( WIFSIGNALED( status ) )
-  {
+  if ( WIFSIGNALED( status ) ) {
       flag = 0;
       printf( "\033[33m true if the child process terminated because of a signal"
 	   	" which was not caught.\033[0m\n" );
 	  printf("子进程是因为信号而结束!\n");
-	  
   }
-
-  if ( WTERMSIG( status ) )
-  {
+  if ( WTERMSIG( status ) ) {
       flag = 0;
       printf( "  the  number of the signal that caused the child process"
 	    "to terminate. This macro can only be  evaluated  if  WIFSIGNALED"
 	    "returned non-zero.\n");
 	  printf("子进程因信号而中止的信号代码:[%d] - [%d]\n", WIFSIGNALED( status ),WTERMSIG( status ));
-	  
   }
-
-  if ( WIFSTOPPED( status ) )
-  {
+  if ( WIFSTOPPED( status ) ) {
       flag = 0;
       printf( "  true  if  the  child process which caused the return is"
 	    "currently stopped; this is only possible if the  call  was  done"
@@ -116,9 +86,7 @@ void ShowStatus( pid_t pid, int32_t status )
 	  printf("子进程处于暂停执行情况!\n");
 	  
   }
-
-  if ( WSTOPSIG( status ) )
-  {
+  if ( WSTOPSIG( status ) ) {
     flag = 0;
     printf( " the number of the signal which caused the child to stop."
 	  "This   macro  can  only  be  evaluated  if  WIFSTOPPED  returned"
@@ -126,9 +94,7 @@ void ShowStatus( pid_t pid, int32_t status )
 	printf("引发子进程暂停的信号代码:[%d]\n", WIFSTOPPED( status ));
 	
   }
-
-  if ( flag )
-  {
+  if ( flag ) {
     printf( "Unknown status = 0x%X\n", status );
   }
 }
@@ -138,6 +104,11 @@ static int32_t CreateProcess(const char *pcPara, struct st_SysTask *st_TaskInfo)
 	pid_t pid;
 	uint8_t byNum = 0;
 	uint8_t byFlg = 1;
+
+    if(TASK_MAX_NUMBER <= st_TaskInfo->dwTaskNum){
+        printf("[error]-The number of processes exceeds the limit, Max Task number is : %d\n", TASK_MAX_NUMBER);
+        return -1;
+    }
 
 	pid = fork();						//创建子进程
 	if(pid == -1)						//创建失败
@@ -166,12 +137,14 @@ static int32_t CreateProcess(const char *pcPara, struct st_SysTask *st_TaskInfo)
 			st_TaskInfo->st_task[st_TaskInfo->dwTaskNum].dwExitBootTime = time(NULL);
 		}
 		
-		OSTaskDelay(100);
+		osTask_msDelay(100);
 		return pid; 
 	}
 
+    char cmd[PROGRAM_NAME_LEN+2] = {0};
+    sprintf(cmd,"./%s",st_TaskInfo->progName);
 	//执行程序文件
-	if(execlp("./solu-rtspMulitPlayer","solu-rtspMulitPlayer",pcPara,(char *)0) < 0)
+	if(execlp(cmd, st_TaskInfo->progName, pcPara, (char *)0) < 0)
 	{
 		perror("execlp error");
 		printf("execlp error: %d => %s", errno, strerror(errno));
@@ -187,6 +160,11 @@ static int32_t CreateSignalProcess(const char *pcPara, struct st_SysTask *st_Tas
 	uint8_t byNum = 0;
 	uint8_t byFlg = 1;
 
+    if(TASK_MAX_NUMBER <= st_TaskInfo->dwTaskNum){
+        printf("[error]-The number of processes exceeds the limit, Max Task number is : %d\n", TASK_MAX_NUMBER);
+        return -1;
+    }
+
 	pid = fork();						//创建子进程
 	if(pid == -1)						//创建失败
 	{
@@ -214,33 +192,20 @@ static int32_t CreateSignalProcess(const char *pcPara, struct st_SysTask *st_Tas
 			st_TaskInfo->st_task[st_TaskInfo->dwTaskNum].dwExitBootTime = time(NULL);
 		}
 		
-		OSTaskDelay(100);
+		osTask_msDelay(100);
 		return pid; 
 	}
 
+    char cmd[PROGRAM_NAME_LEN+2] = {0};
+    sprintf(cmd,"./%s", st_TaskInfo->progName);
 	//执行程序文件
-	if(execlp("./solu-rtspMulitPlayer","solu-rtspMulitPlayer",pcPara, pChnId,(char *)0) < 0)
+	if(execlp(cmd, st_TaskInfo->progName, pcPara, pChnId, (char *)0) < 0)
 	{
 		perror("execlp error");
 		printf("execlp error: %d => %s", errno, strerror(errno));
 		exit(1);
 	}
     
-    return 0;
-}
-
-static int rtspSignalInit(int argc, char** argv)
-{
-	if(argc < 2){
-		::exit(0);
-	}
-
-    char channelName[64] = {0};
-    sprintf(channelName, "%s_%s", argv[1], argv[2]);
-    
-    RtspCapturer *pRtspCapturer = new RtspCapturer(channelName);    
-    pRtspCapturer->init(atoi(argv[2]));
-
     return 0;
 }
 
@@ -251,7 +216,8 @@ int main(int sdwArgc, char **pcArg)
 	uint8_t byTaskNum = 0;
 	pid_t waitpid;
 
-	memset(&st_TaskInfo, 0, sizeof(st_TaskInfo));	
+	memset(&st_TaskInfo, 0, sizeof(st_TaskInfo));
+    strcpy(st_TaskInfo.progName, pcArg[0]+2);   // +2偏移掉"./"
 
     /* 主进程进入此分支 */
 	if(0 == strcmp(pcArg[1], "Main"))
@@ -269,13 +235,14 @@ int main(int sdwArgc, char **pcArg)
         int chnNum = 0;
         if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum))
         {
-            // 2.1 创建播放器 x 1个
-        	Player *pPlayer = NULL;
-        	pPlayer = new Player(chnNum);
-            if(NULL == pPlayer){
-                printf("Player Create faild !!!\n");
+            // 2.1 创建进程间通信服务器
+            if(IPC_server_create(IPC_SERVER_PORT, 20)){
+                printf("IPCServer Create faild !!!\n");
                 return -1;
             }
+            
+            // 2.2 创建播放器 x 1个
+            CreateProcess(PROCESS_PLAYER_NAME, &st_TaskInfo);
 
             // 2.2 创建Rtsp取流器 x n个，每一个都是一条独立进程
     	    char chnId[MAX_CHN_NUM] = {0};
@@ -288,6 +255,9 @@ int main(int sdwArgc, char **pcArg)
 			return -1;
         }
     
+    /* 播放器子程进入此分支 */
+    } else if(0 == strcmp(pcArg[1], PROCESS_PLAYER_NAME)) {
+        playerInit();
     /* 取流器子程进入此分支 */
     } else if(0 == strcmp(pcArg[1], PROCESS_RTSPCLIENT_NAME)) {
     	// 从RTSP流解码
@@ -328,7 +298,7 @@ int main(int sdwArgc, char **pcArg)
 
 				if(st_TaskInfo.st_task[byTaskNum].dwExitRunTime < 10)
 				{
-					OSTaskDelay(1000);
+					osTask_msDelay(1000);
 				}
 
 				bool bSuccess = false;
@@ -340,7 +310,7 @@ int main(int sdwArgc, char **pcArg)
 					if (sdwRet == -1)
 					{
 						printf("CreateProcess failed, retry index: %d", i);
-						OSTaskDelay(500);
+						osTask_msDelay(500);
 					}
 					else
 					{

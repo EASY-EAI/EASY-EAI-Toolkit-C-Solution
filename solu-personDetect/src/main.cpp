@@ -38,7 +38,7 @@ void *detect_thread_entry(void *para)
 		// 算法分析
 		ret = person_detect_run(ctx, image, &pResult->result_group);
 		pResult->person_number = pResult->result_group.count;
-		if(ret <= 0){
+		if(pResult->person_number <= 0){
 			usleep(1000);
 			continue;
 		}
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
 			sprintf(label_text, "%s %0.2f",det_result->name, det_result->prop); 
 			plot_one_box(image, x1, x2, y1, y2, label_text, i%10);
 		}
-        disp_commit(image.data, 0, 0);
+        disp_commit(image.data, IMAGE_SIZE);
 		
         usleep(20*1000);
 	}

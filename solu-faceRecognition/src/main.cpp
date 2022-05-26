@@ -1,6 +1,7 @@
 #include "system.h"
 #include <opencv2/opencv.hpp>
 
+#include "geometry.h"
 #include "face_detect.h"
 #include "face_alignment.h"
 #include "face_recognition.h"
@@ -51,6 +52,7 @@ int dataBase_opt_handle(int eType)
 }
 
 Mat algorithm_image;
+Mat algorithm_IR_image;
 pthread_mutex_t img_lock;
 // 识别线程
 void *detect_thread_entry(void *para)
@@ -62,6 +64,7 @@ void *detect_thread_entry(void *para)
 	rknn_context detect_ctx;
 	std::vector<det> detect_result;
 	Point2f points[5];
+    s32Rect_t irRect, rgbRect;
 	printf("face detect init!\n");
 	ret = face_detect_init(&detect_ctx, "./face_detect.model");
 	if( ret < 0){
@@ -83,27 +86,18 @@ void *detect_thread_entry(void *para)
     // 同步数据库所有数据到内存
 	faceData_t *pFaceData = (faceData_t *)malloc(MAX_USER_NUM * sizeof(faceData_t));
     memset(pFaceData, 0, MAX_USER_NUM * sizeof(faceData_t));
-   int peopleNum = database_getData_to_memory(pFaceData);
+    int peopleNum = database_getData_to_memory(pFaceData);
 	
 	// 初始化按键事件
 	keyEvent_init();
 	set_event_handle(dataBase_opt_handle);
     
-	Mat image;
+	Mat image,irImage;
 	Mat face_algin;
 	float similarity; //特征值相似度比对
 	int face_index = 0;
 	while(1)
 	{
-        if(algorithm_image.empty()) {
-			usleep(5);
-            continue;
-        }
-		
-		pthread_mutex_lock(&img_lock);
-		image = algorithm_image.clone();
-		pthread_mutex_unlock(&img_lock);
-		
 		if(g_delete_all_record){
 			g_delete_all_record = false;
 			// 删除库
@@ -111,19 +105,62 @@ void *detect_thread_entry(void *para)
 			// 重载数据库
 			peopleNum = database_getData_to_memory(pFaceData);
 		}
+		
+        if(algorithm_image.empty() || algorithm_IR_image.empty()) {
+			usleep(5);
+            continue;
+        }
+		
+		pthread_mutex_lock(&img_lock);
+        irImage = algorithm_IR_image.clone();
+		image = algorithm_image.clone();
+		pthread_mutex_unlock(&img_lock);
+		
+        // 活体检测，计算出人脸位置
+        ret = face_detect_run(detect_ctx, irImage, detect_result);
+        if(ret <= 0){   //非活体
+            // 识别结果数据，复位
+			memset(pResult, 0 , sizeof(Result_t));
+			g_input_feature = false;
+            usleep(1000);
+            continue;
+        }
+        irRect.left   = (uint32_t)(detect_result[0].box.x);
+        irRect.top    = (uint32_t)(detect_result[0].box.y);
+        irRect.right  = (uint32_t)(detect_result[0].box.x + detect_result[0].box.width);
+        irRect.bottom = (uint32_t)(detect_result[0].box.y + detect_result[0].box.height);
         
 		// 人脸检测，计算出人脸位置
 		ret = face_detect_run(detect_ctx, image, detect_result);
 		if(ret <= 0){
 			// 识别结果数据，复位
 			memset(pResult, 0 , sizeof(Result_t));
+			g_input_feature = false;
 			usleep(1000);
 			continue;
 		}
-		pResult->x1 = (uint32_t)(detect_result[0].box.x);
-		pResult->y1 = (uint32_t)(detect_result[0].box.y);
-		pResult->x2 = (uint32_t)(detect_result[0].box.x + detect_result[0].box.width);
-		pResult->y2 = (uint32_t)(detect_result[0].box.y + detect_result[0].box.height);
+        rgbRect.left   = (uint32_t)(detect_result[0].box.x);
+        rgbRect.top    = (uint32_t)(detect_result[0].box.y);
+        rgbRect.right  = (uint32_t)(detect_result[0].box.x + detect_result[0].box.width);
+        rgbRect.bottom = (uint32_t)(detect_result[0].box.y + detect_result[0].box.height);
+#if 0
+        // 计算ir人脸与rgb人脸框重合度(最高为1.0)
+        printf("ir[(%d, %d)--(%d, %d)] rgb[(%d, %d)--(%d, %d)],  IoU is %lf\n", irRect.left, irRect.top, irRect.right, irRect.bottom
+                                                                              , rgbRect.left, rgbRect.top, rgbRect.right, rgbRect.bottom
+                                                                              , calc_intersect_of_union(irRect, rgbRect));
+#endif
+        if(calc_intersect_of_union(irRect, rgbRect) <= 0.5){
+            // 识别结果数据，复位
+			memset(pResult, 0 , sizeof(Result_t));
+			g_input_feature = false;
+            usleep(1000);
+            continue;
+        }
+		
+		pResult->x1 = rgbRect.left;
+		pResult->y1 = rgbRect.top;
+		pResult->x2 = rgbRect.right;
+		pResult->y2 = rgbRect.bottom;		
 		for (int i = 0; i < (int)detect_result[0].landmarks.size(); ++i) {
 			points[i].x = (int)detect_result[0].landmarks[i].x;
 			points[i].y = (int)detect_result[0].landmarks[i].y;
@@ -197,8 +234,10 @@ void *detect_thread_entry(void *para)
 int main(int argc, char **argv)
 {
 	int ret = 0;
+    int rgbRet,irRet;
 	
-	char *pbuf = NULL;
+	char *pRGBbuf = NULL;
+	char *pIRbuf = NULL;
 	int skip = 0;
 	
 	pthread_t mTid;
@@ -215,30 +254,47 @@ int main(int argc, char **argv)
 		printf("error: %s, %d\n", __func__, __LINE__);
 		goto exit4;
 	}
+    ret = ircamera_init(CAMERA_WIDTH, CAMERA_HEIGHT, 270);
+    if (ret) {
+        printf("error: %s, %d\n", __func__, __LINE__);
+        goto exit3;
+    }
 	
-	pbuf = NULL;
-	pbuf = (char *)malloc(IMAGE_SIZE);
-	if (!pbuf) {
+	pRGBbuf = NULL;
+	pRGBbuf = (char *)malloc(IMAGE_SIZE);
+	if (!pRGBbuf) {
 		printf("error: %s, %d\n", __func__, __LINE__);
 		ret = -1;
 		goto exit3;
 	}
+	pIRbuf = NULL;
+    pIRbuf = (char *)malloc(IMAGE_SIZE);
+    if (!pIRbuf) {
+        printf("error: %s, %d\n", __func__, __LINE__);
+        ret = -1;
+        goto exit2;
+    }
 	
 	// 跳过前10帧
 	skip = 10;
 	while(skip--) {
-		ret = rgbcamera_getframe(pbuf);
+		ret = rgbcamera_getframe(pRGBbuf);
 		if (ret) {
 			printf("error: %s, %d\n", __func__, __LINE__);
-			goto exit2;
+			goto exit1;
 		}
+        ret = ircamera_getframe(pIRbuf);
+        if (ret) {
+            printf("error: %s, %d\n", __func__, __LINE__);
+            goto exit1;
+        }
 	}
 	
 	// 2.创建识别线程，以及图像互斥锁
 	pthread_mutex_init(&img_lock, NULL);
 	pResult = (Result_t *)malloc(sizeof(Result_t));
 	if(NULL == pResult){
-		goto exit1;
+		goto exit0;
 	}
 	memset(pResult, 0, sizeof(Result_t));
 	if(0 != CreateNormalThread(detect_thread_entry, pResult, &mTid)){
@@ -250,35 +306,41 @@ int main(int argc, char **argv)
     ret = disp_init(SCREEN_WIDTH, SCREEN_HEIGHT);
 	if (ret) {
 		printf("error: %s, %d\n", __func__, __LINE__);
-		goto exit1;
+		goto exit0;
 	}
 	// 4.(取流 + 显示)循环
 	while(1){
 		// 4.1、取流
 		pthread_mutex_lock(&img_lock);
-		ret = rgbcamera_getframe(pbuf);
-		if (ret) {
-			printf("error: %s, %d\n", __func__, __LINE__);
+		rgbRet = rgbcamera_getframe(pRGBbuf);
+        irRet  = ircamera_getframe(pIRbuf);
+        if ((0 != rgbRet) || (0 != irRet)) {
+            printf("error: %s, %d\n", __func__, __LINE__);
 			pthread_mutex_unlock(&img_lock);
-			continue;
-		}
-		algorithm_image = Mat(CAMERA_HEIGHT, CAMERA_WIDTH, CV_8UC3, pbuf);
+            continue;
+        }
+        algorithm_IR_image = Mat(CAMERA_HEIGHT, CAMERA_WIDTH, CV_8UC3, pIRbuf);
+		algorithm_image = Mat(CAMERA_HEIGHT, CAMERA_WIDTH, CV_8UC3, pRGBbuf);
 		image = algorithm_image.clone();
+		//image = algorithm_IR_image.clone();
 		pthread_mutex_unlock(&img_lock);
 
 		// 4.2、显示
 		// 画框
 		rectangle(image, Point(pResult->x1, pResult->y1), Point(pResult->x2, pResult->y2), Scalar(pResult->color[0], pResult->color[1], pResult->color[2]), 3);
-        disp_commit(image.data, 0, 0);
+        disp_commit(image.data, IMAGE_SIZE);
 		
         usleep(20*1000);
 	}
 
-exit1:
+exit0:
 	pthread_mutex_destroy(&img_lock);
+exit1:
+	free(pIRbuf);
+	pIRbuf = NULL;
 exit2:
-	free(pbuf);
-	pbuf = NULL;
+	free(pRGBbuf);
+	pRGBbuf = NULL;
 exit3:
 	rgbcamera_exit();
 exit4:

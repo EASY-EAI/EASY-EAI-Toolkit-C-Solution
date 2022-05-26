@@ -4,6 +4,8 @@
 #include <queue>
 //=====================   C   =====================
 #include "system.h"
+#include "ipcData.h"
+#include "config.h"
 //=====================  SDK  =====================
 #include "ini_wrapper.h"
 #include "system_opt.h"
@@ -117,6 +119,21 @@ void RtspCapturer::init(int32_t chnId)
     set_rtsp_client_video_callback(VideoHandle, (void *)this);
 	create_rtsp_client_channel(&rtspChn);
 
+}
+
+int rtspSignalInit(int argc, char** argv)
+{
+	if(argc < 2){
+		::exit(0);
+	}
+
+    char channelName[64] = {0};
+    sprintf(channelName, "%s_%s", argv[1], argv[2]);
+    
+    RtspCapturer *pRtspCapturer = new RtspCapturer(channelName);    
+    pRtspCapturer->init(atoi(argv[2]));
+
+    return 0;
 }
 
 

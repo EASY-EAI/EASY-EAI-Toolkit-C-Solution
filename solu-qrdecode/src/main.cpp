@@ -132,7 +132,7 @@ int main(int argc, char **argv)
 		// 4.2、显示
 		// 画框
 		rectangle(image, Point(pResult->x1, pResult->y1), Point(pResult->x2, pResult->y2), Scalar(0, 255, 0), 3);
-        disp_commit(image.data, 0, 0);
+        disp_commit(image.data, IMAGE_SIZE);
 		
         usleep(10*1000);
 	}
