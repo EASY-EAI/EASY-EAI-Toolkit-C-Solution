@@ -38,7 +38,7 @@ link_directories(${toolkit_root}/peripheral_api/display)
 LINK_LIBRARIES( person_detect rknn_api )
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( display easymedia rga )
-LINK_LIBRARIES( camera rkfacial rkisp_api )
+LINK_LIBRARIES( camera easymedia rga rkaiq )
 # ======================== easyeai_api =========================
 
 

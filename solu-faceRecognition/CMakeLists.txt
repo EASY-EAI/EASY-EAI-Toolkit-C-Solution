@@ -47,7 +47,7 @@ LINK_LIBRARIES( face_alignment rknn_api )
 LINK_LIBRARIES( face_recognition rknn_api )
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( display easymedia rga )
-LINK_LIBRARIES( camera rkfacial rkisp_api )
+LINK_LIBRARIES(  camera easymedia rga rkaiq )
 # ======================== easyeai_api =========================
 
 
