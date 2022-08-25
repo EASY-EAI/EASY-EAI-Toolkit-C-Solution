@@ -11,7 +11,7 @@ If you first come into contact with this project. You can do:
 [reference the Getting Start Guide](https://www.easy-eai.com/document_details/3/133)
 
 If you have extensive experience in embedded C development. You can do:  
-[reference the EASYEAI development Example](https://www.easy-eai.com/document_details/3/106)
+[reference the EASYEAI development Example](https://www.easy-eai.com/document_details/3/109)
 
 
 How to use：  
@@ -21,6 +21,9 @@ How to use：
 
 important update log:
 ---
+> 2022-08-25 : 
+> * Release easyeai-c-solution-0.2.0
+>
 > 2022-05-26 : 
 > * Release easyeai-c-solution-0.1.3
 >   * [new] solution - helmet Detect

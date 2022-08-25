@@ -229,14 +229,14 @@ int main(int sdwArgc, char **pcArg)
         ini_read_string(RTSP_CLIENT_PATH, "configInfo", "ipAddress", ipv4, sizeof(ipv4));
         ini_read_string(RTSP_CLIENT_PATH, "configInfo", "netMask", netMask, sizeof(netMask));
         ini_read_string(RTSP_CLIENT_PATH, "configInfo", "gateWay", gateWay, sizeof(gateWay));
-        set_net_ipv4(ipv4, netMask, gateWay);
+        set_net_ipv4("eth0",ipv4, netMask, gateWay);
         
         /* 2.根据配置文件，创建播放器x1，创建取流器xN */
         int chnNum = 0;
         if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum))
         {
             // 2.1 创建进程间通信服务器
-            if(IPC_server_create(IPC_SERVER_PORT, 20)){
+            if(IPC_server_create(20)){
                 printf("IPCServer Create faild !!!\n");
                 return -1;
             }
