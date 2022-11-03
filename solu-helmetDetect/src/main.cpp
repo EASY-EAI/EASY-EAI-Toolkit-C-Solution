@@ -53,17 +53,18 @@ void *detect_thread_entry(void *para)
 	return NULL;
 }
 
-static Scalar colorArray[10]={
-    Scalar(255, 0, 0, 255),
-    Scalar(0, 255, 0, 255),
-    Scalar(0,0,139,255),
-    Scalar(0,100,0,255),
-    Scalar(139,139,0,255),
-    Scalar(209,206,0,255),
-    Scalar(0,127,255,255),
-    Scalar(139,61,72,255),
-    Scalar(0,255,0,255),
-    Scalar(255,0,0,255),
+// fmt: BGRA8888
+static Scalar colorArray[10] = {
+    Scalar(0,   0,   255, 255),
+    Scalar(0,   255, 0,   255),
+    Scalar(139, 0,   0,   255),
+    Scalar(0,   100, 0,   255),
+    Scalar(0,   139, 139, 255),
+    Scalar(0,   206, 209, 255),
+    Scalar(255, 127, 0,   255),
+    Scalar(72,  61,  139, 255),
+    Scalar(0,   255, 0,   255),
+    Scalar(255, 0,   0,   255),
 };
 int plot_one_box(Mat src, int x1, int x2, int y1, int y2, char *label, char colour)
 {

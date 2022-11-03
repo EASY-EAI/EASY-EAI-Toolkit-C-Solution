@@ -183,7 +183,7 @@ void *detect_thread_entry(void *para)
 		}
 		printf("similarity:%f\n", similarity);
 		if((face_index < peopleNum)&&(similarity > 0.5)){
-			// 显示绿框
+			// 显示绿框(BGR)
 			pResult->color[0] = 0;
 			pResult->color[1] = 255;
 			pResult->color[2] = 0;
@@ -200,10 +200,10 @@ void *detect_thread_entry(void *para)
 				peopleNum = database_getData_to_memory(pFaceData);
 			}
 		}else{
-			// 显示红框
-			pResult->color[0] = 255;
+			// 显示红框(BGR)
+			pResult->color[0] = 0;
 			pResult->color[1] = 0;
-			pResult->color[2] = 0;
+			pResult->color[2] = 255;
 			// 按键被按下，录入特征值
 			if(g_input_feature){
 				g_input_feature = false;

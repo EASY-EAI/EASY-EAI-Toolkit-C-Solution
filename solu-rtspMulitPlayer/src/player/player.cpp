@@ -333,7 +333,7 @@ void Player::makeCamImg(int32_t chn, void *ptr, int vFmt, int w, int h, int hS, 
     srcImage.rotation = HAL_TRANSFORM_ROT_0;
     srcImage.pBuf = ptr;
     
-    dstImage.fmt = RK_FORMAT_RGB_888;
+    dstImage.fmt = RK_FORMAT_BGR_888;
     dstImage.width = camImg[chn].cols;
     dstImage.height = camImg[chn].rows;
     dstImage.hor_stride = dstImage.width;

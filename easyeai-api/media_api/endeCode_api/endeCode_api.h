@@ -20,6 +20,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "node_desc.h"
+
 #if defined(__cplusplus)
 extern "C" {
 #endif
@@ -128,10 +130,19 @@ extern int32_t set_decMedia_channel_callback(uint32_t u32ChannelId, VideoFrameCB
 
     
 // =======================        [EnCode]        =======================
+typedef enum {
+    RC_MODE_VBR,
+    RC_MODE_CBR,
+    RC_MODE_FIXQP,
+    RC_MODE_AVBR,
+    RC_MODE_BUTT
+} EncRcMode;
+
 // 编码器工作参数[必须]
 typedef struct {
     VEDIO_FRAME_TYPE_E in_fmt;
     VEDIO_CODING_TYPE_E out_fmt;
+    uint32_t out_fps;
     uint32_t width;
     uint32_t height;
     uint32_t hor_stride;   //stride:步长
@@ -141,40 +152,36 @@ typedef struct {
 // 编码器高级工作参数[非必须]
 typedef struct {
     int32_t num_frames;
-    int32_t gop_mode;      //gop:I帧间隔
-    int32_t gop_len;
+    /* gop:I帧间隔 */
+    int32_t gop_mode;       // 高级GOP模式，默认不需要配置(填0)
+    int32_t gop_len;        // (0:[I帧间隔采用2*fps_out_num], n:[I帧间隔为n(1==n,即每一帧都是I帧)])
     int32_t vi_len;
-    int32_t fps_out_num;   //fps:帧率
-    int32_t fps_out_den;
-    int32_t fps_out_flex;
-    int32_t fps_in_num;
-    int32_t fps_in_den;
-    int32_t fps_in_flex;
-    int32_t bps_target;    //bps:码率
-    int32_t bps_min;
-    int32_t bps_max;
-    int32_t rc_mode;
-    uint16_t loop_cnt;
-    uint32_t split_mode;
+    /* fps_out:输出帧率 */
+    int32_t fps_out_flex;   // (0:[固定的输出帧率, 输出帧率=(fps_out_num/fps_out_den)], 1:[可变的输出帧率,完成帧编码后马上输出])
+    int32_t fps_out_num;    // (0:[使用默认值], n:[使用n值]) -- 默认值为30
+    int32_t fps_out_den;    // (0:[使用默认值], n:[使用n值]) -- 默认值为1
+    /* fps_in :输入帧率 */
+    int32_t fps_in_flex;    // (0:[固定的输入帧率, 输入帧率=(fps_in_num/fps_in_den)], 1:[可变的输入帧率])
+    int32_t fps_in_num;     // (0:[使用默认值], n:[使用n值]) -- 默认值为30
+    int32_t fps_in_den;     // (0:[使用默认值], n:[使用n值]) -- 默认值为1
+    /* bps:码率 */
+    int32_t rc_mode;        // 码率控制模式(CBR、VBR、AVBR、FIXQP)
+    int32_t bps_target;     // 目标码率(CBR模式下使用)
+    int32_t bps_max;        // 码率上限(VBR模式下使用)
+    int32_t bps_min;        // 码率下限(VBR模式下使用)
+    /* slice */
+    uint32_t split_mode;    // slice 切分模式(0:[不切分], 1:[根据slice大小], 2:[根据宏块或CTU个数切分])
     uint32_t split_arg;
     uint32_t split_out;
+    /* 以下参数可无须理会 */
     uint32_t osd_enable;   //osd:水印
     uint32_t osd_mode;
     uint32_t user_data_enable;
     uint32_t roi_enable;
 }AdvanceWorkPara;
 
-typedef struct {
-    void *pData;
-    size_t dataLen;
-}NALU_Data;
-typedef	int32_t (*VideoStreamCB)(void *, NALU_Data *);
-
-typedef struct {
-    void *pData;
-    size_t dataLen;        
-}AAC_Data;
-typedef	int32_t (*AudioStreamCB)(void *, AAC_Data *);
+typedef	int32_t (*VideoStreamCB)(void *, VideoNodeDesc *, uint8_t *);
+typedef	int32_t (*AudioStreamCB)(void *, AudioNodeDesc *, uint8_t *);
 
 
 extern int32_t create_encoder(uint32_t maxChnNum);
@@ -188,6 +195,11 @@ extern int32_t push_frame_to_encMedia_channel(uint32_t u32ChannelId, void *pData
 //extern int32_t create_encMedia_audio_channel(uint32_t *u32ChannelId);
 //extern int32_t close_encMedia_audio_channel(uint32_t u32ChannelId);
 //extern int32_t set_encMedia_audio_channel_callback(uint32_t u32ChannelId, AudioStreamCB pFunc, void *pRecObj);
+
+
+// It is used to set the internal print output callback function of the toolikit interface --- (just ignore)
+// 用于设置该Toolikit接口的内部打印输出回调函数 --- (无须关心)
+extern void setEnDeCoder_print(int32_t (* )(char const *filePath, int lineNum, char const *funcName, int logLevel, char const *logCon, va_list args));
 
 #if defined(__cplusplus)
 }

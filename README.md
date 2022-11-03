@@ -11,6 +11,7 @@ If you first come into contact with this project. You can do:
 [reference the Getting Start Guide](https://www.easy-eai.com/document_details/3/133)
 
 If you have extensive experience in embedded C development. You can do:  
+[update the application development environment first](https://www.easy-eai.com/document_details/3/135)  
 [reference the EASYEAI development Example](https://www.easy-eai.com/document_details/3/109)
 
 
@@ -21,6 +22,12 @@ How to use：
 
 important update log:
 ---
+> 2022-11-03 : 
+> * Release easyeai-c-solution-0.2.1
+>   * [new] solution - self Learning
+>   * [new] solution - rtsp IPCamera
+>   * [new] solution - video Recoder
+>
 > 2022-08-25 : 
 > * Release easyeai-c-solution-0.2.0
 >
