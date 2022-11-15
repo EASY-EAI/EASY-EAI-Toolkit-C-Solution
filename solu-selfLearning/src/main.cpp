@@ -7,9 +7,8 @@
 #include "disp.h"
 #include "person_detect.h"
 #include "self_learning.h"
-#include "keyEvent.h"
-
-
+#include "touchscreen.h"
+#include "font_engine.h"
 using namespace cv;
 
 typedef struct{
@@ -24,57 +23,54 @@ pthread_mutex_t shibie_lock;
 const int k_value = 3;
 struct self_learning_data train_data[50];
 int train_data_count = 0;
+int train_data_cnt = 0;
+int train_id_cnt = 0;
 rknn_context classify_ctx;
 
 int train_flag = 0;
+static int mode_id = 1;//模型编号
 
 
-
-int dataBase_opt_handle(int eType)
+int dataBase_opt_handle(uint32_t eType, int x , int y )
 {
-	static int i = 1;//模型编号
+    uint32_t m_event = eType;
+	
 	cv::Mat image_2;
-	switch(eType)
-	{
-		case KEY_PRESS:
-					//printf("按下,训练模型\n");
-					if(i<=3)//训练3个模型
-					{
-						if(algorithm_image.empty()) {
-						usleep(5);
-						}
-						pthread_mutex_lock(&img_lock);
-						image_2 = algorithm_image.clone();
-						pthread_mutex_unlock(&img_lock);
-						printf("模型：%d  训练次数：%d\n",i,(train_data_count % 5)+1);
-						self_learning_train(classify_ctx, image_2, train_data+train_data_count, i);
-						train_data_count++;
-						if(train_data_count % 5 == 0)
-						{
-							i++;
-						}
-						usleep(1000);
-					}else
-					{
-						printf("模型训练成功，开始测试模型\n");
-						train_flag = 1;//训练成功标志
-					}
-					
-					
-			break;
-		case KEY_LONGPRESS:
-			break;
-		case KEY_RELEASE:
-			break;
-		case KEY_CLICK:
-			break;
-		case KEY_DOUBLECLICK:
-			break;
-		default:
-			break;
-	}
+    if(0 != (m_event & TS_PRESS)){
+    }else if (0 != (m_event & TS_RELEASE)) {
+    }else if (0 != (m_event & TS_CLICK)) {
+    }else if (0 != (m_event & TS_DOUBLECLICK)) {
+        printf("****双击屏幕(x:%d, y:%d)****\n",x ,y);  
+		//printf("按下,训练模型\n");
+		if(mode_id <=3)//训练3个模型
+		{
+			if(algorithm_image.empty()) {
+			usleep(5);
+			}
+			pthread_mutex_lock(&img_lock);
+			image_2 = algorithm_image.clone();
+			pthread_mutex_unlock(&img_lock);
+			printf("模型：%d  训练次数：%d\n",mode_id ,(train_data_count % 5)+1);
+			train_data_cnt = (train_data_count % 5)+1;
+			train_id_cnt = mode_id;
+			self_learning_train(classify_ctx, image_2, train_data+train_data_count, mode_id);
+			train_data_count++;
+			if(train_data_count % 5 == 0)
+			{
+				mode_id++;
+			}
+			usleep(1000);
+		}else
+		{
+			printf("模型训练成功，开始测试模型:%d\n",train_flag);
+			train_flag = 1;//训练成功标志
+		}
+    }else if (0 != (m_event & TS_LONGPRESS)) {
+    }else if (0 != (m_event & TS_DRAG)) {
+    }
 	return 0;
 }
+
 
 static Scalar colorArray[10]={
     Scalar(255, 0, 0, 255),
@@ -108,9 +104,11 @@ int plot_one_box(Mat src, int x1, int x2, int y1, int y2, char *label, char colo
 
 void *detect_thread_entry(void *para)
 {
-	if(train_flag == 1)
+	int * ret = (int *)para;
+	int result = 0;
+	while(1)
 	{
-		while(1)
+		if(train_flag == 1)
 		{
 			if(algorithm_image.empty()) {
 					usleep(5);
@@ -120,41 +118,71 @@ void *detect_thread_entry(void *para)
 			Mat	image = algorithm_image.clone();
 			pthread_mutex_unlock(&img_lock);
 
-			int result;
-			result = self_learning_inference(classify_ctx, image, train_data, train_data_count, k_value);
-
-			char label_text[50];
-			memset(label_text, 0 , sizeof(label_text));
-			sprintf(label_text, "模型编号 %d",result); 
-			plot_one_box(image, 0, 10, 0, 10, label_text, 2);
+			*ret = self_learning_inference(classify_ctx, image, train_data, train_data_count, k_value);
 		}
+		usleep(200*1000);
 	}
 	return NULL;
 }
 
-// void *shibie_thread_entry(void *para)
-// {
-// 	pthread_mutex_lock(&shibie_lock);
-// 	while(1)
-// 	{
-// 		if(algorithm_image.empty()) {
-// 				usleep(5);
-// 				continue;
-// 		}
-// 		pthread_mutex_lock(&img_lock);
-// 		Mat	image = algorithm_image.clone();
-// 		pthread_mutex_unlock(&img_lock);
 
-// 		int result;
-// 		result = self_learning_inference(classify_ctx, image, train_data, train_data_count, k_value);
+void  drawDashRect(CvArr* img,int linelength,int dashlength,CvRect* blob,CvScalar color,int thickness)
+{
+	int w=cvRound(blob->width);//width
+	int h=cvRound(blob->height);//height
+	int tl_x=cvRound(blob->x);//top left x
+	int tl_y=cvRound(blob->y);//top  left y
+    int totallength=dashlength+linelength;
+	int nCountX=w/totallength;//
+	int nCountY=h/totallength;//
+	CvPoint start,end;//start and end point of each dash
 
-// 		char label_text[50];
-// 		memset(label_text, 0 , sizeof(label_text));
-// 		sprintf(label_text, "模型编号 %d",result); 
-// 		plot_one_box(image, 0, 10, 0, 10, label_text, 2);
-// 	}
-// 	pthread_mutex_unlock(&shibie_lock);
-// }
+	//draw the horizontal lines
+	start.y=tl_y;
+	start.x=tl_x;
+	end.x=tl_x;
+	end.y=tl_y;
+	for (int i=0;i<nCountX;i++)
+	{
+		end.x=tl_x+(i+1)*totallength-dashlength;//draw top dash line
+		end.y=tl_y;
+		start.x=tl_x+i*totallength;
+		start.y=tl_y;
+		cvLine(img,start,end,color,thickness);   
+	}
+	for (int i=0;i<nCountX;i++)
+	{  
+		start.x=tl_x+i*totallength;
+		start.y=tl_y+h;
+		end.x=tl_x+(i+1)*totallength-dashlength;//draw bottom dash line
+		end.y=tl_y+h;
+		cvLine(img,start,end,color,thickness);     
+	}
+ 
+ 
+	for (int i=0;i<nCountY;i++)
+	{  
+		start.x=tl_x;
+		start.y=tl_y+i*totallength;
+		end.y=tl_y+(i+1)*totallength-dashlength;//draw left dash line
+		end.x=tl_x;
+		cvLine(img,start,end,color,thickness);     
+	}
+ 
+ 
+	for (int i=0;i<nCountY;i++)
+	{  
+		start.x=tl_x+w;
+		start.y=tl_y+i*totallength;
+		end.y=tl_y+(i+1)*totallength-dashlength;//draw right dash line
+		end.x=tl_x+w;
+		cvLine(img,start,end,color,thickness);     
+	}
+}
+
+
+
+
 
 
 
@@ -164,15 +192,20 @@ int main(int argc, char **argv)
 	char *pbuf = NULL;
 	int skip = 0;
 	pthread_t mTid;
+	int result = 0;
+	// 初始化字体透明度和颜色
+	FontColor color = {200, 115, 43, 245};    // {A, R, G, B};
 	
+	// 创建全局字体
+	global_font_create("./simhei.ttf", CODE_UTF8);
+	global_font_set_fontSize(40);
 // 自学习模型初始化
 	self_learning_init(&classify_ctx, "./classify.model");
 
 	memset(train_data, 0, 50*sizeof(struct self_learning_data));
 
-	Init_KeyEven();
-	set_even_handle(dataBase_opt_handle);
-
+    Init_TsEven(NULL,0);//使用环境变量，非阻塞
+    set_even_handle(dataBase_opt_handle);
 	Mat image_1;
 	// 1.打开摄像头
 #define CAMERA_WIDTH	720
@@ -205,7 +238,10 @@ int main(int argc, char **argv)
 	// 2.创建识别线程，以及图像互斥锁
 	pthread_mutex_init(&img_lock, NULL);
 	// //回调，传入参数，tid
-	CreateNormalThread(detect_thread_entry, NULL, &mTid);
+
+	
+	CreateNormalThread(detect_thread_entry, &result, &mTid);
+
 	//3.显示初始化
 #define SCREEN_WIDTH	720
 #define SCREEN_HEIGHT	1280
@@ -227,7 +263,27 @@ int main(int argc, char **argv)
 		algorithm_image = Mat(CAMERA_HEIGHT, CAMERA_WIDTH, CV_8UC3, pbuf);
 		image_1 = algorithm_image.clone();
 		pthread_mutex_unlock(&img_lock);
-	
+			// 写入文字
+		char label_text[50];
+		char label_text2[50];
+		if(1 == train_flag){/*识别模式*/
+			memset(label_text, 0 , sizeof(label_text));
+			memset(label_text2, 0 , sizeof(label_text2));
+			sprintf(label_text, "训练结束，开始识别"); 
+			sprintf(label_text2, "模型ID：%d",result); 
+		}else{/*训练模式*/
+			memset(label_text, 0 , sizeof(label_text));
+			memset(label_text2, 0 , sizeof(label_text2));
+			sprintf(label_text, "模型训练中，双击屏幕开始训练"); 
+			sprintf(label_text2, "模型ID：%d ， 训练次数：%d",train_id_cnt ,train_data_cnt); 
+		}
+		putText(image_1.data, image_1.cols, image_1.rows, label_text, 30, 30, color);
+		putText(image_1.data, image_1.cols, image_1.rows, label_text2, 30, 1000, color);
+		IplImage tmp = IplImage(image_1);
+		CvArr* arr = (CvArr*)&tmp;
+		CvRect rect1 = cvRect(20,300,680,680);
+		drawDashRect(arr,1,2,&rect1,CV_RGB(253,255,85),2);
+
         disp_commit(image_1.data, IMAGE_SIZE);
         usleep(20*1000);
 	}
@@ -238,6 +294,7 @@ exit2:
 	free(pbuf);
 	pbuf = NULL;
 exit3:
+	global_font_destory();
 	rgbcamera_exit();
 exit4:
     return ret;

@@ -20,3 +20,6 @@ cmake ..
 make -j24
 
 mkdir -p "../Release" && cp $CUR_DIR_NAME "../Release"
+cp "../simhei.ttf" "../Release"
+
+

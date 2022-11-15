@@ -29,6 +29,8 @@ set(api_inc
    ${toolkit_root}/peripheral_api/camera
    ${toolkit_root}/peripheral_api/display
    ${toolkit_root}/algorithm_api/self_learning
+   ${toolkit_root}/peripheral_api/touchscreen
+   ${toolkit_root}/common_api/font_engine
    )
 # -L
 link_directories(${toolkit_root}/algorithm_api/person_detect)
@@ -36,12 +38,15 @@ link_directories(${toolkit_root}/common_api/system_opt)
 link_directories(${toolkit_root}/peripheral_api/camera)
 link_directories(${toolkit_root}/peripheral_api/display)
 link_directories(${toolkit_root}/algorithm_api/self_learning)
+link_directories(${toolkit_root}/peripheral_api/touchscreen)
+link_directories(${toolkit_root}/common_api/font_engine)
+
 # -l
 LINK_LIBRARIES( person_detect rknn_api )
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( display easymedia rga )
 LINK_LIBRARIES( camera easymedia rga rkaiq )
-LINK_LIBRARIES( self_learning )
+LINK_LIBRARIES( self_learning  touchscreen font_engine  iconv freetype  bz2 ts )
 # ======================== easyeai_api =========================
 
 
@@ -50,14 +55,12 @@ LINK_LIBRARIES( self_learning )
 # -I
 set(custom_inc
    ${PROJECT_SOURCE_DIR}/include
-   ${PROJECT_SOURCE_DIR}/src/keyEvent
    )
 # -L
 link_directories(${PROJECT_SOURCE_DIR}/libs)
 # LINK_LIBRARIES( -lcustom )
 # source code
 aux_source_directory(./src dir_srcs)
-aux_source_directory(./src/keyEvent dir_srcs)
 # ========================== custom ============================
 
 #--------------------------
