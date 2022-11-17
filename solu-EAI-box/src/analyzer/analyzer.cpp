@@ -383,7 +383,7 @@ Analyzer::Analyzer(int iChnNum) :
 {
     // ==================== 1.初始化进程间通信资源 ====================
     IPC_client_create();
-    IPC_client_init(IPC_SERVER_PORT, ANALYZER_CLI_ID);
+    IPC_client_init(ANALYZER_CLI_ID);
     IPC_client_set_callback(this, analyzerHanndle);
 
     // ===================== 2.初始化分析算法资源 =====================
@@ -470,7 +470,7 @@ void Analyzer::initDisplay()
 	screen.screen_width = SCREEN_WIDTH;
 	screen.screen_height = SCREEN_HEIGHT;
 	screen.wins[0].enable = 1;
-	screen.wins[0].in_fmt = IMAGE_TYPE_RGB888;
+	screen.wins[0].in_fmt = IMAGE_TYPE_BGR888;
 	screen.wins[0].in_w = FRAME_WIDTH;
 	screen.wins[0].in_h = FRAME_HEIGHT;
 	screen.wins[0].HorStride = FRAME_WIDTH;
@@ -486,7 +486,7 @@ void Analyzer::initDisplay()
 	screen.wins[0].win_h = SCREEN_HEIGHT/2;
 
 	screen.wins[1].enable = 1;
-	screen.wins[1].in_fmt = IMAGE_TYPE_RGB888;
+	screen.wins[1].in_fmt = IMAGE_TYPE_BGR888;
 	screen.wins[1].in_w = FRAME_WIDTH;
 	screen.wins[1].in_h = FRAME_HEIGHT;
 	screen.wins[1].HorStride = FRAME_WIDTH;
@@ -502,7 +502,7 @@ void Analyzer::initDisplay()
 	screen.wins[1].win_h = SCREEN_HEIGHT/2;
 
 	screen.wins[2].enable = 1;
-	screen.wins[2].in_fmt = IMAGE_TYPE_RGB888;
+	screen.wins[2].in_fmt = IMAGE_TYPE_BGR888;
 	screen.wins[2].in_w = FRAME_WIDTH;
 	screen.wins[2].in_h = FRAME_HEIGHT;
 	screen.wins[2].HorStride = FRAME_WIDTH;
@@ -518,7 +518,7 @@ void Analyzer::initDisplay()
 	screen.wins[2].win_h = SCREEN_HEIGHT/2;
     
 	screen.wins[3].enable = 1;
-	screen.wins[3].in_fmt = IMAGE_TYPE_RGB888;
+	screen.wins[3].in_fmt = IMAGE_TYPE_BGR888;
 	screen.wins[3].in_w = FRAME_WIDTH;
 	screen.wins[3].in_h = FRAME_HEIGHT;
 	screen.wins[3].HorStride = FRAME_WIDTH;

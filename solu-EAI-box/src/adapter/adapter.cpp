@@ -49,7 +49,7 @@ void Adapter::init()
 {
     // ==================== 1.初始化进程间通信资源 ====================
     IPC_client_create();
-    IPC_client_init(IPC_SERVER_PORT, ADAPTER_CLI_ID);
+    IPC_client_init(ADAPTER_CLI_ID);
     IPC_client_set_callback(this, adapterHanndle);
 
 	bObjIsInited = 1;
