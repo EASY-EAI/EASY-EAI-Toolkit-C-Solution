@@ -77,6 +77,53 @@ void *cruiseCtrl_thread(void *para)
 	pthread_exit(NULL);
 }
 
+void *sendNALUtoDecoderThread(void *para)
+{
+    uint32_t *pChnId = (uint32_t *)para;
+    uint32_t chnId = *pChnId;
+    
+    VideoNodeDesc nodeDesc;
+    
+    uint8_t *pTempBuf = NULL;
+    pTempBuf = (uint8_t *)mpp_malloc(char, MEM_BLOCK_SIZE_5M);
+    while(1) {    
+        if(!pTempBuf){
+            pTempBuf = (uint8_t *)mpp_malloc(char, MEM_BLOCK_SIZE_5M);
+            usleep(20 * 1000);
+        }
+        
+        // 通道合法性校验
+        if((0 <= chnId) && (chnId < MAX_CHN_NUM))
+        {
+            if(!pTempBuf){
+                usleep(20 * 1000);
+                continue;
+            }
+        
+            // 从环形共享内存队列中，取出节点描述信息，以及把帧数据放入临时内存中
+            if(0 == get_node_from_video_channel(chnId, &nodeDesc, pTempBuf)){
+
+                // 把NALU数据送入各自的解码通道
+                push_node_in_decMedia_channel(chnId, &nodeDesc, pTempBuf);
+                usleep(5*1000);
+            } else {
+                usleep(15*1000);
+            }
+        
+        }else{
+            usleep(500*1000);
+        }
+
+    }
+
+    if(pTempBuf){
+        mpp_free(pTempBuf);
+        pTempBuf = NULL;
+    }
+
+	pthread_exit(NULL);
+}
+
 static int32_t VideoPlayerHandle(void *pPlayer,  VideoFrameData *pData)
 {
 	static uint64_t preTime[MAX_CHN_NUM] = {0};
@@ -220,6 +267,9 @@ Player::Player(int iChnNum) :
     }
     
 	// 3.3-向解码器申请解码通道
+	create_video_frame_queue_pool(mChnannelNumber);
+    //create_audio_frame_queue_pool(mChnannelNumber);
+	pthread_t indataTid[MAX_CHN_NUM];
     for(int i = 0; i < mChnannelNumber; i++){
     	if(0 == create_decMedia_channel(&mChannelId[i])){
     		//printf("============= [%d]time ==============\n", i);
@@ -228,12 +278,16 @@ Player::Player(int iChnNum) :
     		// 3.4-往成功申请的通道绑定解码输出处理函数
     		if(0 == mChannelId[i]){
     	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
             }else if (1 == mChannelId[i]){
     	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
             }else if (2 == mChannelId[i]){
     	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
             }else if (3 == mChannelId[i]){
     	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
             }
     	}
     }

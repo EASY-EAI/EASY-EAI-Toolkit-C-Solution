@@ -22,6 +22,12 @@ How to use：
 
 important update log:
 ---
+> 2023-01-11 : 
+> * Release easyeai-c-solution-0.2.2
+>   * [update] solution - rtspMulitPlayer
+>   * [update] solution - rtsp IPCamera
+>   * [del] solution - EAI Box
+>
 > 2022-11-03 : 
 > * Release easyeai-c-solution-0.2.1
 >   * [new] solution - self Learning

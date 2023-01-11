@@ -4,7 +4,6 @@
 #include <queue>
 //=====================   C   =====================
 #include "system.h"
-#include "ipcData.h"
 #include "config.h"
 //=====================  SDK  =====================
 #include "ini_wrapper.h"
@@ -21,7 +20,7 @@ typedef struct{
 	
 }RtspCapturer_para_t;
 
-int32_t VideoHandle(void *pCapturer, VideoNodeDesc *pNodeDesc, uint8_t *pData)
+int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
 {
     if(NULL == pCapturer)
         return -1;
@@ -38,25 +37,38 @@ int32_t VideoHandle(void *pCapturer, VideoNodeDesc *pNodeDesc, uint8_t *pData)
     
     if( NULL != pData &&        /*有帧数据*/
         0 != pSelf->IsInited() &&       /*Rtsp取流器已被初始化好*/
-        0 < pNodeDesc->dwDataLen 
+        0 < pDesc->dataLen 
     ){
         frameCount++;
         //成功取流，送流进入取流器输出队列
-        pNodeDesc->dwFrameIndex = frameCount;
+        pDesc->frameIndex = frameCount;
+        
         #if 0   //Debug
-        printf("tempNode.read_size = %d\n", tempNode.read_size);
-        #endif
-        #if 0   //Debug
-        printf("Format[%d](0-H264,1-MJPEG,2-MPEG4,3-H265)---Type[%d](0-P,1-I,2B)---TimeStamp[%llu]\n", 
-                pNodeDesc->eVdecChnFormat, pNodeDesc->bySubType, pNodeDesc->ddwTimeStamp);
+        printf("Format[%d](0-H264,1-MJPEG,2-MPEG4,3-H265)---Type[%d](0-P,1-I,2-B)---NALUSize[%u]---TimeStamp[%llu]\n", 
+                pNodeDesc->eVdecChnFormat, pNodeDesc->bySubType, pNodeDesc->dwDataLen, pNodeDesc->ddwTimeStamp);
         #endif
         #if 0   //Debug
         if(1 == pNodeDesc->dwSignalVout){
 		    printf("[input]--- chn[%d] -- %d fps  --- frameIndex = %u --- interval = %llu ms\n",pNodeDesc->dwSignalVout, pNodeDesc->dwTargetFrameRate, pNodeDesc->dwFrameIndex ,interval);
         }
         #endif
+        
         if((0 <= pSelf->channelId()) && (pSelf->channelId() < MAX_VIDEO_CHN_NUMBER)){
-            push_node_to_video_channel(pSelf->channelId(), pNodeDesc, pData);
+            VideoNodeDesc NodeDesc = {0};
+            NodeDesc.dwSignalVout        = pDesc->videoChnId;
+            NodeDesc.dwDataLen           = pDesc->dataLen;
+            NodeDesc.ddwTimeStamp        = pDesc->timeStamp;
+            NodeDesc.ddwReceiveTimeStamp = pDesc->recTimeStamp;
+            NodeDesc.eVdecChnFormat      = (VDEC_CHN_FORMAT_E)pDesc->frameFormat;
+            NodeDesc.dwTargetFrameRate   = pDesc->frameRate;
+            NodeDesc.dwWidth             = pDesc->frameWidth;
+            NodeDesc.dwHeight            = pDesc->frameHeight;
+            NodeDesc.dwCropEnable        = false;
+            NodeDesc.stActRegion.dwX     = 0;
+            NodeDesc.stActRegion.dwY     = 0;
+            NodeDesc.stActRegion.dwWidth = NodeDesc.dwWidth;
+            NodeDesc.stActRegion.dwHeight= NodeDesc.dwHeight;
+            push_node_to_video_channel(pSelf->channelId(), &NodeDesc, pData);
         }
     }
 
@@ -68,7 +80,6 @@ RtspCapturer::RtspCapturer(std::string strSection) :
     m_dwChnId(-1),
 	bObjIsInited(0)
 {
-
 }
 
 RtspCapturer::~RtspCapturer()
@@ -112,6 +123,7 @@ void RtspCapturer::init(int32_t chnId)
 	rtspChn.uFrameRate = frameRate;
 	
     rtspChn.uDecChn = chnId;
+	rtspChn.bUseTcpConnect = true;
 	rtspChn.bOutputTestRecordFile = true;
 
     m_dwChnId = chnId;

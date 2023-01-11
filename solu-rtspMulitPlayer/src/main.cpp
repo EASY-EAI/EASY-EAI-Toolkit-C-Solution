@@ -5,6 +5,7 @@
 #include <string>
 //=====================   C   =====================
 #include "system.h"
+#include "network.h"
 #include "ipcData.h"
 #include "config.h"
 //=====================  SDK  =====================

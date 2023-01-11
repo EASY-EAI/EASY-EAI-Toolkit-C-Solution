@@ -13,6 +13,7 @@
 */
 
 #include "system.h"
+#include "config.h"
 
 #include "camera.h"
 #include "enCoder.h"
@@ -37,7 +38,7 @@ int32_t StreamOutpuHandle(void *obj, VideoNodeDesc *pNodeDesc, uint8_t *pNALUDat
                                                     pNodeDesc->bySubType,
                                                     pNodeDesc->dwDataLen);
     
-    push_node_to_video_channel(0, pNodeDesc, pNALUData);
+    push_node_to_video_channel(DATA_INPUT_CHN, pNodeDesc, pNALUData);
 
     return 0;
 }
@@ -66,7 +67,7 @@ int enCoderInit(const char *moduleName)
 	}
 
     // 初始化共享内存通道--用于rtsp发送
-    create_video_frame_queue_pool(2);
+    create_video_frame_queue_pool(DATA_INPUT_CHN+1);
 
     /* ============================= 初始化摄像头 ============================= */
     ret = rgbcamera_init(CAMERA_WIDTH, CAMERA_HEIGHT, 90);

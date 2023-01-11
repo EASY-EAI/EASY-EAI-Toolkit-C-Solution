@@ -5,5 +5,7 @@
 
 #define LOGCONFIG_PATH    "./logCfg"
 
+#define DATA_INPUT_CHN 0
+
 #endif //__CONFIG_H__
 

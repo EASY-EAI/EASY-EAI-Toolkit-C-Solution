@@ -35,6 +35,7 @@ set(api_inc
    ${toolkit_root}/media_api/endeCode_api
    ${toolkit_root}/netProtocol_api/rtsp
    ${toolkit_root}/peripheral_api/display
+   ${toolkit_root}/peripheral_api/network
    )
 # -L
 link_directories(${toolkit_root}/algorithm_api/qrdecode)
@@ -44,6 +45,7 @@ link_directories(${toolkit_root}/media_api/frame_queue)
 link_directories(${toolkit_root}/media_api/endeCode_api)
 link_directories(${toolkit_root}/netProtocol_api/rtsp)
 link_directories(${toolkit_root}/peripheral_api/display)
+link_directories(${toolkit_root}/peripheral_api/network)
 # -l
 LINK_LIBRARIES( rkfacial rkisp_api )
 LINK_LIBRARIES( qrdecode zbar )
@@ -52,6 +54,7 @@ LINK_LIBRARIES( ini_wrapper ini )
 LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp )
 LINK_LIBRARIES( frame_queue )
 LINK_LIBRARIES( rtsp liveMedia crypto ssl BasicUsageEnvironment UsageEnvironment groupsock )
+LINK_LIBRARIES( network )
 LINK_LIBRARIES( display easymedia rga )
 # ======================== easyeai_api =========================
 
