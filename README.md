@@ -22,6 +22,12 @@ How to use：
 
 important update log:
 ---
+> 2023-03-31 : 
+> * Release easyeai-c-solution-1.0.0
+>   * Adapting ubuntu firmware
+>   * Adapting easyeai-api v1.0.0
+>   * Incompatible buildroot firmware(The Solution for the buildroot firmware version is located in the buildroot branch of this repository)
+>
 > 2023-01-11 : 
 > * Release easyeai-c-solution-0.2.2
 >   * [update] solution - rtspMulitPlayer

@@ -49,7 +49,8 @@ private:
     
     int32_t mChnannelNumber;
     uint32_t mPlayingChnId;
-    uint32_t mChannelId[MAX_CHN_NUM];
+    uint32_t mVideoChannelId[MAX_CHN_NUM];
+    uint32_t mAudioChannelId[MAX_CHN_NUM];
 
 	int bObjIsInited;
 	

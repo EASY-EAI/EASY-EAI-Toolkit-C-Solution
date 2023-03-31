@@ -6,24 +6,25 @@ MESSAGE("current project: " ${CURRENT_FOLDER})
 set(CMAKE_SYSTEM_NAME Linux)
 set(CMAKE_CROSSCOMPILING TRUE)
 
-set(CMAKE_C_COMPILER "arm-linux-gnueabihf-gcc")
-set(CMAKE_CXX_COMPILER "arm-linux-gnueabihf-g++")
+cmake_host_system_information(RESULT arch_value QUERY OS_PLATFORM)
+message(STATUS "architecture: " ${arch_value})
 
-# find host dir and set CMAKE_TOOLCHAIN_FILE before call project
-execute_process(COMMAND which ${CMAKE_C_COMPILER} 
-                OUTPUT_VARIABLE gcc_full_path)
-get_filename_component(gcc_full_dir ${gcc_full_path} DIRECTORY)
-set(HOST_DIR "${gcc_full_dir}/..")
-set(CMAKE_TOOLCHAIN_FILE "${HOST_DIR}/share/buildroot/toolchainfile.cmake")
+if(NOT "${arch_value}" STREQUAL "armv7l")
+	include ($ENV{HOME}/configs/cross.cmake)
+endif()
 
+#若要使用${CMAKE_SYSROOT}变量，project必须要在set(CMAKE_TOOLCHAIN_FILE "${HOST_DIR}/share/buildroot/toolchainfile.cmake")后面设置
 project(${CURRENT_FOLDER})
 add_definitions(-Wall)
+# use c++ 11
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -Wall")
+
 
 # ======================== easyeai_api =========================
 set(toolkit_root ${CMAKE_CURRENT_SOURCE_DIR}/../easyeai-api)
 # -I
 set(api_inc
-   ${CMAKE_SYSROOT}/usr/include/rkfacial
    ${toolkit_root}/algorithm_api/helmet_detect
    ${toolkit_root}/common_api/system_opt
    ${toolkit_root}/peripheral_api/camera
@@ -38,19 +39,40 @@ link_directories(${toolkit_root}/peripheral_api/display)
 LINK_LIBRARIES( helmet_detect rknn_api )
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( display easymedia rga )
-LINK_LIBRARIES( camera easymedia rga rkaiq )
+LINK_LIBRARIES( camera easymedia rga rkaiq)
 # ======================== easyeai_api =========================
 
 
 # ========================== custom ============================
 # solution project
+find_package(OpenCV REQUIRED)
 # -I
 set(custom_inc
    ${PROJECT_SOURCE_DIR}/include
-   )
+   ${OpenCV_INCLUDE_DIRS}
+)
 # -L
 link_directories(${PROJECT_SOURCE_DIR}/libs)
-# LINK_LIBRARIES( -lcustom )
+# -l
+LINK_LIBRARIES( 
+    opencv_calib3d 
+    opencv_core 
+    opencv_dnn 
+    opencv_features2d 
+    opencv_flann 
+    opencv_highgui 
+    opencv_imgcodecs 
+    opencv_imgproc 
+    opencv_ml 
+    opencv_objdetect 
+    opencv_photo 
+    opencv_shape 
+    opencv_stitching 
+    opencv_superres 
+    opencv_videoio 
+    opencv_video 
+    opencv_videostab
+)
 # source code
 aux_source_directory(./src dir_srcs)
 # ========================== custom ============================
@@ -58,23 +80,6 @@ aux_source_directory(./src dir_srcs)
 #--------------------------
 # execute file
 #--------------------------
-add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
-target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-target_link_libraries(${CURRENT_FOLDER} 
-    -lopencv_calib3d 
-    -lopencv_core 
-    -lopencv_dnn 
-    -lopencv_features2d 
-    -lopencv_flann 
-    -lopencv_highgui 
-    -lopencv_imgcodecs 
-    -lopencv_imgproc 
-    -lopencv_ml 
-    -lopencv_objdetect 
-    -lopencv_photo 
-    -lopencv_shape 
-    -lopencv_stitching 
-    -lopencv_superres 
-    -lopencv_videoio 
-    -lopencv_video 
-    -lopencv_videostab)	#-l
+add_executable(${CURRENT_FOLDER} ${dir_srcs})
+target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})
+

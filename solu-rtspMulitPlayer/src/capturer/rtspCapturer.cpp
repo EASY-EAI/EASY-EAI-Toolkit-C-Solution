@@ -7,6 +7,7 @@
 #include "config.h"
 //=====================  SDK  =====================
 #include "ini_wrapper.h"
+#include "log_manager.h"
 #include "system_opt.h"
 #include "frame_queue.h"
 #include "rtsp.h"
@@ -35,8 +36,8 @@ int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
         oldTimeVal = newTimeVal;
     }
     
-    if( NULL != pData &&        /*有帧数据*/
-        0 != pSelf->IsInited() &&       /*Rtsp取流器已被初始化好*/
+    if( NULL != pData &&            /*有帧数据*/
+        0 != pSelf->IsInited() &&   /*Rtsp取流器已被初始化好*/
         0 < pDesc->dataLen 
     ){
         frameCount++;
@@ -44,12 +45,12 @@ int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
         pDesc->frameIndex = frameCount;
         
         #if 0   //Debug
-        printf("Format[%d](0-H264,1-MJPEG,2-MPEG4,3-H265)---Type[%d](0-P,1-I,2-B)---NALUSize[%u]---TimeStamp[%llu]\n", 
-                pNodeDesc->eVdecChnFormat, pNodeDesc->bySubType, pNodeDesc->dwDataLen, pNodeDesc->ddwTimeStamp);
+        printf("Format[%d](0-H264,1-MJPEG,2-MPEG4,3-H265)---Type[%d](0-?,1-I,2-P,3-B)---NALUSize[%u]---TimeStamp[%llu]\n", 
+                pDesc->frameFormat, pDesc->frameType, pDesc->dataLen, pDesc->timeStamp);
         #endif
         #if 0   //Debug
-        if(1 == pNodeDesc->dwSignalVout){
-		    printf("[input]--- chn[%d] -- %d fps  --- frameIndex = %u --- interval = %llu ms\n",pNodeDesc->dwSignalVout, pNodeDesc->dwTargetFrameRate, pNodeDesc->dwFrameIndex ,interval);
+        if(1 == pDesc->videoChnId){
+		    printf("[input]--- chn[%d] -- %d fps  --- frameIndex = %u --- interval = %llu ms\n",pDesc->videoChnId, pDesc->frameRate, pDesc->frameIndex ,interval);
         }
         #endif
         
@@ -59,6 +60,7 @@ int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
             NodeDesc.dwDataLen           = pDesc->dataLen;
             NodeDesc.ddwTimeStamp        = pDesc->timeStamp;
             NodeDesc.ddwReceiveTimeStamp = pDesc->recTimeStamp;
+            NodeDesc.bySubType           = pDesc->frameType;
             NodeDesc.eVdecChnFormat      = (VDEC_CHN_FORMAT_E)pDesc->frameFormat;
             NodeDesc.dwTargetFrameRate   = pDesc->frameRate;
             NodeDesc.dwWidth             = pDesc->frameWidth;
@@ -69,6 +71,35 @@ int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
             NodeDesc.stActRegion.dwWidth = NodeDesc.dwWidth;
             NodeDesc.stActRegion.dwHeight= NodeDesc.dwHeight;
             push_node_to_video_channel(pSelf->channelId(), &NodeDesc, pData);
+        }
+    }
+
+    return 0;
+}
+
+int32_t AudioHandle(void *pCapturer, RTSPAudioDesc_t *pDesc, uint8_t *pData)
+{
+    if(NULL == pCapturer)
+        return -1;
+    RtspCapturer *pSelf = (RtspCapturer *)pCapturer;
+
+    if( NULL != pData &&            /*有帧数据*/
+        0 != pSelf->IsInited() &&   /*Rtsp取流器已被初始化好*/
+        0 < pDesc->dataLen
+    ){
+        //成功取流，送流进入取流器输出队列
+        if((0 <= pSelf->channelId()) && (pSelf->channelId() < MAX_VIDEO_CHN_NUMBER)){
+            AudioNodeDesc NodeDesc = {0};
+            NodeDesc.dwStreamId     = pDesc->audioChnId;
+            NodeDesc.ePayloadType   = (ADEC_CHN_FORMAT_E)pDesc->frameFormat;
+            NodeDesc.dwFrameIndex   = pDesc->frameIndex;
+            NodeDesc.dwDataLen      = pDesc->dataLen;
+            NodeDesc.ddwTimeStamp   = pDesc->timeStamp;
+            NodeDesc.dwSampleRateHz = pDesc->sampleRateHz;
+            NodeDesc.dwBitRate      = pDesc->bitRate;
+            NodeDesc.wProfile       = pDesc->profile;
+            memcpy(NodeDesc.strConfig, pDesc->strConfig, sizeof(pDesc->strConfig));
+            push_node_to_audio_channel(pSelf->channelId(), &NodeDesc, pData);
         }
     }
 
@@ -90,6 +121,7 @@ RtspCapturer::~RtspCapturer()
 void RtspCapturer::init(int32_t chnId)
 {
     create_video_frame_queue_pool(MAX_VIDEO_CHN_NUMBER);
+    create_audio_frame_queue_pool(MAX_VIDEO_CHN_NUMBER);
     
 	bObjIsInited = 1;
 	
@@ -123,12 +155,12 @@ void RtspCapturer::init(int32_t chnId)
 	rtspChn.uFrameRate = frameRate;
 	
     rtspChn.uDecChn = chnId;
-	rtspChn.bUseTcpConnect = true;
+	//rtspChn.bUseTcpConnect = true;
 	rtspChn.bOutputTestRecordFile = true;
 
     m_dwChnId = chnId;
     
-    set_rtsp_client_video_callback(VideoHandle, (void *)this);
+    set_rtsp_client_callback(VideoHandle, AudioHandle, (void *)this);
 	create_rtsp_client_channel(&rtspChn);
 
 }
@@ -141,6 +173,9 @@ int rtspSignalInit(int argc, char** argv)
 
     char channelName[64] = {0};
     sprintf(channelName, "%s_%s", argv[1], argv[2]);
+    
+    // 0-初始化日志管理系统
+    //log_manager_init(".", channelName);
     
     RtspCapturer *pRtspCapturer = new RtspCapturer(channelName);    
     pRtspCapturer->init(atoi(argv[2]));

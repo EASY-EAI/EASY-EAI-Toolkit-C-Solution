@@ -11,6 +11,7 @@
 //=====================  SDK  =====================
 #include "system_opt.h"
 #include "ini_wrapper.h"
+#include "ipc.h"
 //=====================  PRJ  =====================
 #include "capturer/rtspCapturer.h"
 #include "player/player.h"
@@ -42,7 +43,7 @@ struct st_SysTask
 #define PROCESS_PLAYER_NAME   "player"
 #define PROCESS_RTSPCLIENT_NAME "rtspChannel"
 
-void ShowStatus( pid_t pid, int32_t status )
+static void ShowStatus( pid_t pid, int32_t status )
 {
   int flag = 1;
 
@@ -224,13 +225,27 @@ int main(int sdwArgc, char **pcArg)
 	if(0 == strcmp(pcArg[1], "Main"))
 	{
 	    /* 1.根据配置文件，设置本地IP地址 */
-	    char ipv4[64]={0};
-	    char netMask[64]={0};
-	    char gateWay[64]={0};
-        ini_read_string(RTSP_CLIENT_PATH, "configInfo", "ipAddress", ipv4, sizeof(ipv4));
-        ini_read_string(RTSP_CLIENT_PATH, "configInfo", "netMask", netMask, sizeof(netMask));
-        ini_read_string(RTSP_CLIENT_PATH, "configInfo", "gateWay", gateWay, sizeof(gateWay));
-        set_net_ipv4("eth0",ipv4, netMask, gateWay);
+	    char tagIpv4[64]={0};
+	    char tagNetMask[64]={0};
+	    char tagGateWay[64]={0};
+        ini_read_string(RTSP_CLIENT_PATH, "configInfo", "ipAddress", tagIpv4, sizeof(tagIpv4));
+        ini_read_string(RTSP_CLIENT_PATH, "configInfo", "netMask", tagNetMask, sizeof(tagNetMask));
+        //ini_read_string(RTSP_CLIENT_PATH, "configInfo", "gateWay", tagGateWay, sizeof(tagGateWay));
+        
+	    char curIpv4[64]={0};
+	    char curNetMask[64]={0};
+	    //char curGateWay[64]={0};
+        get_local_Ip("eth0", curIpv4, sizeof(curIpv4));
+        get_local_NetMask("eth0", curNetMask, sizeof(curNetMask));
+        //get_local_GateWay("eth0", curGateWay, sizeof(curGateWay));
+        if((0 != strcmp(tagIpv4, curIpv4))||(0 != strcmp(tagNetMask, curNetMask)) /*||(0 != strcmp(tagGateWay, curGateWay))*/){
+            // 重设IP地址
+            printf("need reSet network parameter!\n");
+            set_ipv4_static("eth0", tagIpv4, tagNetMask, tagGateWay);
+            restart_network_device();
+            usleep(2500*1000);
+        }
+        
         
         /* 2.根据配置文件，创建播放器x1，创建取流器xN */
         int chnNum = 0;

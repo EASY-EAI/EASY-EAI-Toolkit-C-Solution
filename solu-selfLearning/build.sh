@@ -13,13 +13,23 @@ if [ "$1" = "clear" ]; then
 	exit 0
 fi
 
+# build this project
 rm -rf build
 mkdir build
 cd build
 cmake ..
 make -j24
 
+# make Release files
 mkdir -p "../Release" && cp $CUR_DIR_NAME "../Release"
 cp "../simhei.ttf" "../Release"
+chmod 777 ../Release -R
 
+# install files to Board env
+if [ "$1" = "cpres" ]; then
+        cp ../Release/* $SYSROOT/userdata/Solu
+else
+        cp ../Release/$CUR_DIR_NAME $SYSROOT/userdata/Solu
+fi
 
+exit 0

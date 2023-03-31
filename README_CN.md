@@ -22,6 +22,12 @@
 
 重要更新：
 ---
+> 2023-03-31 : 
+> * 发布easyeai-c-uiSolution-1.0.0
+>   * 匹配 ubuntu 系统固件
+>   * 匹配 easyeai-api v1.0.0
+>   * 不兼容buildroot系统固件(buildroot版本的Solution在本仓库的buildroot分支内)
+>
 > 2023-01-11 : 
 > * 发布easyeai-c-solution-0.2.2
 >   * [更新] 多路网络摄像头方案

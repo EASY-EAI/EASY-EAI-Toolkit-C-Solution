@@ -1,20 +1,20 @@
 #include "system.h"
-#include <opencv2/opencv.hpp>
-#include <stdio.h>
-#include <sys/time.h>
+
 #include "system_opt.h"
+#include "font_engine.h"
 #include "camera.h"
 #include "disp.h"
-#include "person_detect.h"
-#include "self_learning.h"
 #include "touchscreen.h"
-#include "font_engine.h"
-using namespace cv;
 
-typedef struct{
-	person_detect_result_group_t result_group;
-	int person_number;
-}Result_t;
+#include "self_learning.h"
+
+#if (CV_VERSION_MAJOR >= 4)
+#include <opencv2/imgproc/imgproc_c.h>
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/highgui/highgui_c.h>
+#endif
+
+using namespace cv;
 
 Mat algorithm_image;
 pthread_mutex_t img_lock;
@@ -126,7 +126,7 @@ void *detect_thread_entry(void *para)
 }
 
 
-void  drawDashRect(CvArr* img,int linelength,int dashlength,CvRect* blob,CvScalar color,int thickness)
+void  drawDashRect(CvArr* img,int linelength,int dashlength, CvRect* blob, CvScalar color,int thickness)
 {
 	int w=cvRound(blob->width);//width
 	int h=cvRound(blob->height);//height
@@ -279,10 +279,17 @@ int main(int argc, char **argv)
 		}
 		putText(image_1.data, image_1.cols, image_1.rows, label_text, 30, 30, color);
 		putText(image_1.data, image_1.cols, image_1.rows, label_text2, 30, 1000, color);
+#if (CV_VERSION_MAJOR >= 4)
+		IplImage tmp = cvIplImage(image_1);
+		CvArr* arr = (CvArr*)&tmp;
+		CvRect rect1 = cvRect(20,300,680,680);
+		drawDashRect(arr,1,2,&rect1,cvScalar(253,255,85),2);
+#else
 		IplImage tmp = IplImage(image_1);
 		CvArr* arr = (CvArr*)&tmp;
 		CvRect rect1 = cvRect(20,300,680,680);
 		drawDashRect(arr,1,2,&rect1,CV_RGB(253,255,85),2);
+#endif
 
         disp_commit(image_1.data, IMAGE_SIZE);
         usleep(20*1000);
