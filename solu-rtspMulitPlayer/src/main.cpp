@@ -11,7 +11,7 @@
 //=====================  SDK  =====================
 #include "system_opt.h"
 #include "ini_wrapper.h"
-#include "ipc.h"
+//#include "ipc.h"
 //=====================  PRJ  =====================
 #include "capturer/rtspCapturer.h"
 #include "player/player.h"
@@ -249,15 +249,9 @@ int main(int sdwArgc, char **pcArg)
         
         /* 2.根据配置文件，创建播放器x1，创建取流器xN */
         int chnNum = 0;
-        if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum))
-        {
-            // 2.1 创建进程间通信服务器
-            if(IPC_server_create(20)){
-                printf("IPCServer Create faild !!!\n");
-                return -1;
-            }
-            
-            // 2.2 创建播放器 x 1个
+        if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum)){
+                        
+            // 2.1 创建播放器 x 1个
             CreateProcess(PROCESS_PLAYER_NAME, &st_TaskInfo);
 
             // 2.2 创建Rtsp取流器 x n个，每一个都是一条独立进程

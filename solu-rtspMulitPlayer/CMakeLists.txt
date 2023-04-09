@@ -28,7 +28,6 @@ set(api_inc
    ${toolkit_root}/common_api/system_opt
    ${toolkit_root}/common_api/ini_wrapper
    ${toolkit_root}/common_api/log_manager
-   ${toolkit_root}/common_api/ipc
    ${toolkit_root}/media_api/frame_queue
    ${toolkit_root}/media_api/endeCode_api
    ${toolkit_root}/netProtocol_api/rtsp
@@ -39,7 +38,6 @@ set(api_inc
 link_directories(${toolkit_root}/common_api/system_opt)
 link_directories(${toolkit_root}/common_api/ini_wrapper)
 link_directories(${toolkit_root}/common_api/log_manager)
-link_directories(${toolkit_root}/common_api/ipc)
 link_directories(${toolkit_root}/media_api/frame_queue)
 link_directories(${toolkit_root}/media_api/endeCode_api)
 link_directories(${toolkit_root}/netProtocol_api/rtsp)
@@ -49,8 +47,7 @@ link_directories(${toolkit_root}/peripheral_api/network)
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( ini_wrapper ini )
 LINK_LIBRARIES( log_manager )
-LINK_LIBRARIES( ipc )
-LINK_LIBRARIES( frame_queue )
+LINK_LIBRARIES( frame_queue log_manager )
 LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp )
 LINK_LIBRARIES( rtsp )
 LINK_LIBRARIES( network yaml-cpp )
