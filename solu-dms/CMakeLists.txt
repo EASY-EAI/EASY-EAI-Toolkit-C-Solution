@@ -15,7 +15,7 @@ endif()
 
 #若要使用${CMAKE_SYSROOT}变量，project必须要在set(CMAKE_TOOLCHAIN_FILE "${HOST_DIR}/share/buildroot/toolchainfile.cmake")后面设置
 project(${CURRENT_FOLDER})
-add_definitions(-Wall)
+add_definitions(-Wall -Wpointer-arith)
 # use c++ 11
 #set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall")
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -Wall")
@@ -25,21 +25,27 @@ add_definitions(-Wall)
 set(toolkit_root ${CMAKE_CURRENT_SOURCE_DIR}/../easyeai-api)
 # -I
 set(api_inc
-   ${toolkit_root}/algorithm_api/helmet_detect
+   ${toolkit_root}/algorithm_api/face_detect
+   ${toolkit_root}/algorithm_api/face_landmark98
+   ${toolkit_root}/algorithm_api/smoke_detect
+   ${toolkit_root}/algorithm_api/phonecall_detect
    ${toolkit_root}/common_api/system_opt
    ${toolkit_root}/peripheral_api/camera
    ${toolkit_root}/peripheral_api/display
    )
 # -L
-link_directories(${toolkit_root}/algorithm_api/helmet_detect)
+link_directories(${toolkit_root}/algorithm_api/face_detect)
+link_directories(${toolkit_root}/algorithm_api/face_landmark98)
+link_directories(${toolkit_root}/algorithm_api/smoke_detect)
+link_directories(${toolkit_root}/algorithm_api/phonecall_detect)
 link_directories(${toolkit_root}/common_api/system_opt)
 link_directories(${toolkit_root}/peripheral_api/camera)
 link_directories(${toolkit_root}/peripheral_api/display)
 # -l
-LINK_LIBRARIES( helmet_detect rknn_api )
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( display easymedia rga )
 LINK_LIBRARIES( camera easymedia rga rkaiq)
+LINK_LIBRARIES( phonecall_detect smoke_detect face_landmark98 face_detect rknn_api )
 # ======================== easyeai_api =========================
 
 
@@ -48,8 +54,8 @@ LINK_LIBRARIES( camera easymedia rga rkaiq)
 find_package(OpenCV REQUIRED)
 # -I
 set(custom_inc
-   ${PROJECT_SOURCE_DIR}/include
    ${OpenCV_INCLUDE_DIRS}
+   ${PROJECT_SOURCE_DIR}/include
 )
 # -L
 link_directories(${PROJECT_SOURCE_DIR}/libs)

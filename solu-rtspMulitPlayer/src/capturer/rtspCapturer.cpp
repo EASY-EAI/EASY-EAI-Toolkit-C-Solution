@@ -49,7 +49,7 @@ int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
                 pDesc->frameFormat, pDesc->frameType, pDesc->dataLen, pDesc->timeStamp);
         #endif
         #if 0   //Debug
-        if(1 == pDesc->videoChnId){
+        if(0 == pDesc->videoChnId){
 		    printf("[input]--- chn[%d] -- %d fps  --- frameIndex = %u --- interval = %llu ms\n",pDesc->videoChnId, pDesc->frameRate, pDesc->frameIndex ,interval);
         }
         #endif
@@ -121,7 +121,9 @@ RtspCapturer::~RtspCapturer()
 void RtspCapturer::init(int32_t chnId)
 {
     create_video_frame_queue_pool(MAX_VIDEO_CHN_NUMBER);
+    flush_video_channel(chnId);
     create_audio_frame_queue_pool(MAX_VIDEO_CHN_NUMBER);
+    flush_audio_channel(chnId);
     
 	bObjIsInited = 1;
 	
@@ -175,7 +177,7 @@ int rtspSignalInit(int argc, char** argv)
     sprintf(channelName, "%s_%s", argv[1], argv[2]);
     
     // 0-初始化日志管理系统
-    //log_manager_init(".", channelName);
+    log_manager_init(".", channelName);
     
     RtspCapturer *pRtspCapturer = new RtspCapturer(channelName);    
     pRtspCapturer->init(atoi(argv[2]));

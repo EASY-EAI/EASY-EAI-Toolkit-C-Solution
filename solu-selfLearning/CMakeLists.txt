@@ -13,7 +13,7 @@ if(NOT "${arch_value}" STREQUAL "armv7l")
 	include ($ENV{HOME}/configs/cross.cmake)
 endif()
 
-#若要使用${CMAKE_SYSROOT}变量，project必须要在set(CMAKE_TOOLCHAIN_FILE "${HOST_DIR}/share/buildroot/toolchainfile.cmake")后面设置
+#鑻ヨ浣跨敤${CMAKE_SYSROOT}鍙橀噺锛宲roject蹇呴』瑕佸湪set(CMAKE_TOOLCHAIN_FILE "${HOST_DIR}/share/buildroot/toolchainfile.cmake")鍚庨潰璁剧疆
 project(${CURRENT_FOLDER})
 add_definitions(-Wall)
 # use c++ 11
@@ -60,25 +60,10 @@ set(custom_inc
 # -L
 link_directories(${PROJECT_SOURCE_DIR}/libs)
 # -l
-LINK_LIBRARIES( pthread bz2 )
-LINK_LIBRARIES( 
-    opencv_calib3d 
-    opencv_core 
-    opencv_dnn 
-    opencv_features2d 
-    opencv_flann 
-    opencv_highgui 
-    opencv_imgcodecs 
-    opencv_imgproc 
-    opencv_ml 
-    opencv_objdetect 
-    opencv_photo 
-    opencv_shape 
-    opencv_stitching 
-    opencv_superres 
-    opencv_videoio 
-    opencv_video 
-    opencv_videostab
+set(custom_libs
+   ${OpenCV_LIBS}
+   pthread
+   bz2
 )
 # source code
 aux_source_directory(./src dir_srcs)
@@ -89,4 +74,5 @@ aux_source_directory(./src dir_srcs)
 #--------------------------
 add_executable(${CURRENT_FOLDER} ${dir_srcs})
 target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})
+target_link_libraries(${CURRENT_FOLDER} ${custom_libs})
 

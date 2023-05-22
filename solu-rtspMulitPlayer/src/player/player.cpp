@@ -544,7 +544,7 @@ int playerInit()
     Player *pPlayer = NULL;
     
     // 0-初始化日志管理系统
-    //log_manager_init(".", "Player");
+    log_manager_init(".", "Player");
     
     if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum)) {
         pPlayer = new Player(chnNum);
