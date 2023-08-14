@@ -218,6 +218,15 @@ int main(int sdwArgc, char **pcArg)
 	uint8_t byTaskNum = 0;
 	pid_t waitpid;
 
+    if(1 == sdwArgc){
+        printf("\nerr: Missing parameter!\n");
+        printf("================= [usage] ==================\n");
+        printf("example:\n");
+        printf("\t%s Main\n", pcArg[0]);
+        printf("--------------------------------------------\n");
+        return 0;
+    }
+
 	memset(&st_TaskInfo, 0, sizeof(st_TaskInfo));
     strcpy(st_TaskInfo.progName, pcArg[0]+2);   // +2偏移掉"./"
 

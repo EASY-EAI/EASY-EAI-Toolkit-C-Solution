@@ -46,7 +46,7 @@ link_directories(${toolkit_root}/peripheral_api/network)
 # -l
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( ini_wrapper ini )
-LINK_LIBRARIES( log_manager )
+LINK_LIBRARIES( log_manager ini )
 LINK_LIBRARIES( frame_queue log_manager )
 LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp )
 LINK_LIBRARIES( rtsp )
