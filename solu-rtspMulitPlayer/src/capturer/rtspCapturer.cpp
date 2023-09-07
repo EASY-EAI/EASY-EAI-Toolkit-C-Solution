@@ -95,6 +95,7 @@ int32_t AudioHandle(void *pCapturer, RTSPAudioDesc_t *pDesc, uint8_t *pData)
             NodeDesc.dwFrameIndex   = pDesc->frameIndex;
             NodeDesc.dwDataLen      = pDesc->dataLen;
             NodeDesc.ddwTimeStamp   = pDesc->timeStamp;
+            NodeDesc.dwChannelNums  = pDesc->channelNums;
             NodeDesc.dwSampleRateHz = pDesc->sampleRateHz;
             NodeDesc.dwBitRate      = pDesc->bitRate;
             NodeDesc.wProfile       = pDesc->profile;

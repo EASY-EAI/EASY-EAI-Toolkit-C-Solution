@@ -39,8 +39,6 @@ public:
     // 解码器输出数据 - RGB格式
     pthread_rwlock_t camImglock[MAX_CHN_NUM];
     Mat camImg[MAX_CHN_NUM];
-
-
 protected:
 	
 private:

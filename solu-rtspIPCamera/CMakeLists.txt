@@ -46,7 +46,7 @@ link_directories(${toolkit_root}/peripheral_api/camera)
 # -l
 LINK_LIBRARIES( system_opt )
 LINK_LIBRARIES( log_manager ini )
-LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp )
+LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp avcodec swresample avutil)
 LINK_LIBRARIES( frame_queue )
 LINK_LIBRARIES( rtsp )
 LINK_LIBRARIES( camera easymedia rga rkaiq )

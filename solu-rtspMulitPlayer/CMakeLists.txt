@@ -33,6 +33,7 @@ set(api_inc
    ${toolkit_root}/netProtocol_api/rtsp
    ${toolkit_root}/peripheral_api/display
    ${toolkit_root}/peripheral_api/network
+   ${toolkit_root}/peripheral_api/audio
    )
 # -L
 link_directories(${toolkit_root}/common_api/system_opt)
@@ -43,15 +44,17 @@ link_directories(${toolkit_root}/media_api/endeCode_api)
 link_directories(${toolkit_root}/netProtocol_api/rtsp)
 link_directories(${toolkit_root}/peripheral_api/display)
 link_directories(${toolkit_root}/peripheral_api/network)
+link_directories(${toolkit_root}/peripheral_api/audio)
 # -l
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( ini_wrapper ini )
 LINK_LIBRARIES( log_manager ini )
 LINK_LIBRARIES( frame_queue log_manager )
-LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp )
+LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp avcodec avutil )
 LINK_LIBRARIES( rtsp )
 LINK_LIBRARIES( network yaml-cpp )
 LINK_LIBRARIES( display easymedia rga )
+LINK_LIBRARIES( audio asound )
 # ======================== easyeai_api =========================
 
 

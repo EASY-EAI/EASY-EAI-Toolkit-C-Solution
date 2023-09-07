@@ -9,6 +9,7 @@
 #include "frame_queue.h"
 #include "endeCode_api.h"
 #include "network.h"
+#include "audio.h"
 #include "disp.h"
 
 /* flip source image horizontally (around the vertical axis) */
@@ -290,7 +291,7 @@ void *sendAACtoDecoderThread(void *para)
             if(0 == get_node_from_audio_channel(chnId, &nodeDesc, pTempBuf)){
                 //printf("get an AAC data: frameIndex = %u, dataLen = %u\n", nodeDesc.dwFrameIndex, nodeDesc.dwDataLen);
                 // 把AAC数据送入各自的解码通道
-                //push_node_in_decMedia_audio_channel(chnId, &nodeDesc, pTempBuf);
+                push_node_in_decMedia_audio_channel(chnId, &nodeDesc, pTempBuf);
                 usleep(5*1000);
             } else {
                 usleep(15*1000);
@@ -312,7 +313,37 @@ void *sendAACtoDecoderThread(void *para)
 
 static int32_t AudioPlayerHandle(void *pPlayer,  AudioFrameData *pData)
 {
+#if 0 //这部分尚未调试好
+    static bool bSndIsInited = false;
+    static snd_pcm_format_t audioFmt;
+    static int32_t audioChnNums = 0;    // 声道数量
+    static int32_t sample_rate  = 0;     // 音频采样率
 
+    if((0 != pData->err_info) || (0 != pData->discard)){
+        printf("[output] chn %02d ----- errinfo : %u discard : %u\n", pData->channel, pData->err_info, pData->discard);
+        return -1;
+    }
+#if 0   //调试打印信息
+    printf("audioDecChn[%02d] ----- channels: %d, sample_nb: %d, sample_size: %d, sample_rate: %d\n", pData->channel,
+                    pData->aChannels, pData->sample_nb, pData->sample_size, pData->sample_rate);
+#endif
+    // 只要有参数不匹配，则需要重新初始化声卡
+    if((false == bSndIsInited) || (audioFmt != pData->sample_fmt) || (audioChnNums != pData->aChannels) || (sample_rate != pData->sample_rate)){
+        ao_exit();
+        bSndIsInited = false;
+        if(0 == ao_init(pData->sample_rate, pData->aChannels, pData->sample_fmt)){
+            bSndIsInited = true;
+            audioFmt     = pData->sample_fmt;
+            audioChnNums = pData->aChannels;
+            sample_rate  = pData->sample_rate;
+        }
+    }
+    
+    // 声卡处于初始化好的状态
+    if(bSndIsInited){
+        ao_writepcmBuf((uint8_t *)pData->pBuf, pData->bufSize, false);
+    }
+#endif
     return 0;
 }
 
@@ -478,7 +509,7 @@ void Player::displayCurChn()
     if(IsInited()){
         image = camImg[mPlayingChnId];
         
-        srcImage.fmt = RK_FORMAT_RGB_888;
+        srcImage.fmt = RK_FORMAT_BGR_888;
         srcImage.width = image.cols;
         srcImage.height = image.rows;
         srcImage.hor_stride = srcImage.width;
@@ -486,7 +517,7 @@ void Player::displayCurChn()
         srcImage.rotation = HAL_TRANSFORM_ROT_270;
         srcImage.pBuf = image.data;
         
-        dstImage.fmt = RK_FORMAT_RGB_888;
+        dstImage.fmt = RK_FORMAT_BGR_888;
         dstImage.width = SCREEN_WIDTH;
         dstImage.height = SCREEN_HEIGHT;
         dstImage.hor_stride = dstImage.width;
@@ -554,7 +585,7 @@ int playerInit()
             ret = 0;
         }
     }
-
+    
     if(-1 == ret)
         return ret;
     

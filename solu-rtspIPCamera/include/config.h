@@ -5,7 +5,10 @@
 
 #define LOGCONFIG_PATH    "./logCfg"
 
-#define DATA_INPUT_CHN 0
+typedef enum {
+    CHANNEL_0 = 0,
+    CHANNEL_Max
+}AVData_Chn;
 
 #endif //__CONFIG_H__
 

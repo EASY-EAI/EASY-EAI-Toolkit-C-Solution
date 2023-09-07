@@ -22,6 +22,13 @@ How to use：
 
 important update log:
 ---
+> 2023-09-07 : 
+> * Release easyeai-c-uiSolution-1.1.0
+>   * [new] solution - device infomation
+>   * [update] solution - rtspMulitPlayer
+>   * [update] solution - rtsp IPCamera
+>   * [update] solution - video Recoder
+>
 > 2023-05-2 : 
 > * Release easyeai-c-uiSolution-1.0.1
 >   * [new] solution - DMS(Driver monitoring system)
