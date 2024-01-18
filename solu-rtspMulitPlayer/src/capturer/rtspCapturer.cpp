@@ -21,6 +21,44 @@ typedef struct{
 	
 }RtspCapturer_para_t;
 
+static VDEC_CHN_FORMAT_E video_fmt_rtsp2Node(VDEC_FORMAT_E fmt)
+{
+    VDEC_CHN_FORMAT_E outFmt = VDEC_CHN_FORMAT_H264;
+    switch (fmt){
+        case VDEC_FORMAT_H264:
+            outFmt = VDEC_CHN_FORMAT_H264;  break;
+        case VDEC_FORMAT_MJPEG:
+            outFmt = VDEC_CHN_FORMAT_MJPEG;  break;
+        case VDEC_FORMAT_MPEG4:
+            outFmt = VDEC_CHN_FORMAT_MPEG4;  break;
+        case VDEC_FORMAT_H265:
+            outFmt = VDEC_CHN_FORMAT_H265;  break;
+        default: 
+            outFmt = VDEC_CHN_FORMAT_H264;  break;
+    }
+    return outFmt;
+}
+
+static ADEC_CHN_FORMAT_E audio_fmt_rtsp2Node(AUDIO_TYPE_E fmt)
+{
+    ADEC_CHN_FORMAT_E outFmt = ADEC_CHN_FORMAT_INVALID;
+    switch (fmt){
+        case AUDIO_TYPE_G711_A:
+            outFmt = ADEC_CHN_FORMAT_G711_A;  break;
+        case AUDIO_TYPE_G711_U:
+            outFmt = ADEC_CHN_FORMAT_G711_U;  break;
+        case AUDIO_TYPE_G726:
+            outFmt = ADEC_CHN_FORMAT_G726;  break;
+        case AUDIO_TYPE_AAC_ADTS:
+            outFmt = ADEC_CHN_FORMAT_AAC_ADTS;  break;
+        case AUDIO_TYPE_AAC_MPEG4_GENERIC:
+            outFmt = ADEC_CHN_FORMAT_AAC_MPEG4_GENERIC;  break;
+        default: 
+            outFmt = ADEC_CHN_FORMAT_INVALID;  break;
+    }
+    return outFmt;
+}
+
 int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
 {
     if(NULL == pCapturer)
@@ -61,7 +99,7 @@ int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
             NodeDesc.ddwTimeStamp        = pDesc->timeStamp;
             NodeDesc.ddwReceiveTimeStamp = pDesc->recTimeStamp;
             NodeDesc.bySubType           = pDesc->frameType;
-            NodeDesc.eVdecChnFormat      = (VDEC_CHN_FORMAT_E)pDesc->frameFormat;
+            NodeDesc.eVdecChnFormat      = video_fmt_rtsp2Node(pDesc->frameFormat);
             NodeDesc.dwTargetFrameRate   = pDesc->frameRate;
             NodeDesc.dwWidth             = pDesc->frameWidth;
             NodeDesc.dwHeight            = pDesc->frameHeight;
@@ -91,7 +129,7 @@ int32_t AudioHandle(void *pCapturer, RTSPAudioDesc_t *pDesc, uint8_t *pData)
         if((0 <= pSelf->channelId()) && (pSelf->channelId() < MAX_VIDEO_CHN_NUMBER)){
             AudioNodeDesc NodeDesc = {0};
             NodeDesc.dwStreamId     = pDesc->audioChnId;
-            NodeDesc.ePayloadType   = (ADEC_CHN_FORMAT_E)pDesc->frameFormat;
+            NodeDesc.ePayloadType   = audio_fmt_rtsp2Node(pDesc->frameFormat);
             NodeDesc.dwFrameIndex   = pDesc->frameIndex;
             NodeDesc.dwDataLen      = pDesc->dataLen;
             NodeDesc.ddwTimeStamp   = pDesc->timeStamp;

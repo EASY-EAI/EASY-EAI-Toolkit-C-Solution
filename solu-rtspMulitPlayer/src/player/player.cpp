@@ -1,5 +1,6 @@
 //=====================  PRJ  =====================
 #include "player.h"
+#include "wavInfo_opt.h"
 //=====================  SDK  =====================
 #include <rga/RgaApi.h>
 #include "mpp_mem.h"
@@ -8,6 +9,7 @@
 #include "log_manager.h"
 #include "frame_queue.h"
 #include "endeCode_api.h"
+#include "wav_opt.h"
 #include "network.h"
 #include "audio.h"
 #include "disp.h"
@@ -221,13 +223,13 @@ static int32_t VideoPlayerHandle(void *pPlayer,  VideoFrameData *pData)
             return 0;
         }
     }else if(2/*[Chn 2]*/ == pData->channel){
-        if(curTime - preTime[pData->channel] >= 150000/* 每1.5ms一张 */){
+        if(curTime - preTime[pData->channel] >= 1500000/* 每1.5s一张 */){
             preTime[pData->channel] = curTime;
         }else{
             return 0;
         }
     }else if(3/*[Chn 3]*/ == pData->channel){
-        if(curTime - preTime[pData->channel] >= 70000/* 每700ms一张 */){
+        if(curTime - preTime[pData->channel] >= 70000/* 每70ms一张 */){
             preTime[pData->channel] = curTime;
         }else{
             return 0;
@@ -313,7 +315,6 @@ void *sendAACtoDecoderThread(void *para)
 
 static int32_t AudioPlayerHandle(void *pPlayer,  AudioFrameData *pData)
 {
-#if 0 //这部分尚未调试好
     static bool bSndIsInited = false;
     static snd_pcm_format_t audioFmt;
     static int32_t audioChnNums = 0;    // 声道数量
@@ -324,26 +325,24 @@ static int32_t AudioPlayerHandle(void *pPlayer,  AudioFrameData *pData)
         return -1;
     }
 #if 0   //调试打印信息
-    printf("audioDecChn[%02d] ----- channels: %d, sample_nb: %d, sample_size: %d, sample_rate: %d\n", pData->channel,
-                    pData->aChannels, pData->sample_nb, pData->sample_size, pData->sample_rate);
+    PRINT_DEBUG("audioDecChn[%02d] ----- channels: %d, sample_nb: %d, sample_size: %d, sample_rate: %d, %d", pData->channel,
+                    pData->aChannels, pData->sample_nb, pData->sample_size, pData->sample_rate, pData->bufSize);
 #endif
     // 只要有参数不匹配，则需要重新初始化声卡
     if((false == bSndIsInited) || (audioFmt != pData->sample_fmt) || (audioChnNums != pData->aChannels) || (sample_rate != pData->sample_rate)){
         ao_exit();
         bSndIsInited = false;
-        if(0 == ao_init(pData->sample_rate, pData->aChannels, pData->sample_fmt)){
+        if(0 == ao_init(pData->sample_rate/pData->sample_nb, pData->sample_rate, pData->aChannels, pData->sample_fmt)){
             bSndIsInited = true;
             audioFmt     = pData->sample_fmt;
             audioChnNums = pData->aChannels;
             sample_rate  = pData->sample_rate;
         }
     }
-    
     // 声卡处于初始化好的状态
     if(bSndIsInited){
-        ao_writepcmBuf((uint8_t *)pData->pBuf, pData->bufSize, false);
+        //ao_writepcmBuf((uint8_t *)pData->pBuf, pData->bufSize, false);
     }
-#endif
     return 0;
 }
 

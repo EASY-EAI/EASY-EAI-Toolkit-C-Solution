@@ -30,6 +30,7 @@ set(api_inc
    ${toolkit_root}/common_api/log_manager
    ${toolkit_root}/media_api/frame_queue
    ${toolkit_root}/media_api/endeCode_api
+   ${toolkit_root}/media_api/wav_opt
    ${toolkit_root}/netProtocol_api/rtsp
    ${toolkit_root}/peripheral_api/display
    ${toolkit_root}/peripheral_api/network
@@ -41,6 +42,7 @@ link_directories(${toolkit_root}/common_api/ini_wrapper)
 link_directories(${toolkit_root}/common_api/log_manager)
 link_directories(${toolkit_root}/media_api/frame_queue)
 link_directories(${toolkit_root}/media_api/endeCode_api)
+link_directories(${toolkit_root}/media_api/wav_opt)
 link_directories(${toolkit_root}/netProtocol_api/rtsp)
 link_directories(${toolkit_root}/peripheral_api/display)
 link_directories(${toolkit_root}/peripheral_api/network)
@@ -51,6 +53,7 @@ LINK_LIBRARIES( ini_wrapper ini )
 LINK_LIBRARIES( log_manager ini )
 LINK_LIBRARIES( frame_queue log_manager )
 LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp avcodec avutil )
+LINK_LIBRARIES( wav_opt )
 LINK_LIBRARIES( rtsp )
 LINK_LIBRARIES( network yaml-cpp )
 LINK_LIBRARIES( display easymedia rga )

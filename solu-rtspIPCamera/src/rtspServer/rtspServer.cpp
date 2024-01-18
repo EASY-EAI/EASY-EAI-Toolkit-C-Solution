@@ -43,8 +43,6 @@ int32_t VideoStreamDataIn(void *pCustomData, RTSPVideoDesc_t *pDesc, uint8_t *pD
     return 0;
 }
 
-
-#if 0 //目前暂未调通
 //FILE *fp_audio_output = NULL;
 void AudioStreamConnect(void *pCustomData)
 {
@@ -58,10 +56,9 @@ int32_t AudioStreamDataIn(void *pCustomData, RTSPAudioDesc_t *pDesc, uint8_t *pD
 {   
     int *queueChnId = (int *)pCustomData;
 
-
     AudioNodeDesc node;
     memset(&node, 0, sizeof(node));
-#if 0
+    
     static uint8_t *pTempBuff = NULL;
     if(NULL == pTempBuff){
         pTempBuff = (uint8_t *)malloc(MEM_BLOCK_SIZE_64K);
@@ -76,22 +73,14 @@ int32_t AudioStreamDataIn(void *pCustomData, RTSPAudioDesc_t *pDesc, uint8_t *pD
     // 写入AAC ES数据
     memcpy(pData+node.wAACHeaderLen, pTempBuff, node.dwDataLen);
     pDesc->dataLen    = node.wAACHeaderLen + node.dwDataLen;
-    if(fp_audio_output){
-        fwrite(pData, 1, pDesc->dataLen, fp_audio_output);
-    }
-#else
-    int ret = get_node_from_audio_channel(*queueChnId, &node, pData);
-    if(0 != ret){
-        return ret;
-    }
-    pDesc->dataLen    = node.dwDataLen;
-#endif
     pDesc->timeStamp  = node.ddwTimeStamp;
     
+    //if(fp_audio_output){
+    //    fwrite(pData, 1, pDesc->dataLen, fp_audio_output);
+    //}
     
     return 0;
 }
-#endif
 
 int rtspServerInit(const char *moduleName)
 {
@@ -109,8 +98,8 @@ int rtspServerInit(const char *moduleName)
     srv.stream[0].videoHooks.pDataInHook = VideoStreamDataIn;
     srv.stream[0].videoHooks.pCustomData = &queueChnId;
     srv.stream[0].audioHooks.eDateFmt = AUDIO_TYPE_AAC_ADTS;
-    srv.stream[0].audioHooks.pConnectHook = NULL;//AudioStreamConnect; //目前暂未调通
-    srv.stream[0].audioHooks.pDataInHook = NULL;//AudioStreamDataIn; //目前暂未调通
+    srv.stream[0].audioHooks.pConnectHook = AudioStreamConnect;
+    srv.stream[0].audioHooks.pDataInHook = AudioStreamDataIn;
     srv.stream[0].audioHooks.pCustomData = &queueChnId;
     strcpy(srv.stream[0].strName, "aabb");
 

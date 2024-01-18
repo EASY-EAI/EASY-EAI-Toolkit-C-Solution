@@ -126,7 +126,7 @@ void *videoCapture_thread(void *para)
                     usleep(10*1000); continue;
                 }
                 
-        	    push_frame_to_encMedia_channel(pPara->videoChn_Id, pbuf, IMAGE_SIZE);
+        	    push_frame_to_encMedia_channel(pPara->videoChn_Id, pbuf, IMAGE_SIZE, false);
                 usleep(10*1000);
 
                 // 录完就退出编码线程
@@ -199,7 +199,7 @@ void *audioCapture_thread(void *para)
     uint32_t readSize = 0;      //实际从声卡读出来的数据大小
     if(pPara){
         /* ============================== 初始化麦克风 =============================== */
-    	ret = ai_init(PCM_SAMPLERATE, PCM_CHANNEL, PCM_FORMAT);
+    	ret = ai_init(0, PCM_SAMPLERATE, PCM_CHANNEL, PCM_FORMAT);
         if(ret){ bIsInited = false; }
         
         periodSize = ai_pcmPeriodSize();
