@@ -13,10 +13,12 @@ if [ "$1" = "clear" ]; then
 	exit 0
 fi
 
+# build this project
 rm -rf build
 mkdir build
 cd build
 cmake ..
 make -j24
 
+# make Release files
 mkdir -p "../Release" && cp $CUR_DIR_NAME "../Release"

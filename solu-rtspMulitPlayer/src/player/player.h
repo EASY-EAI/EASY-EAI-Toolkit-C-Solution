@@ -39,8 +39,6 @@ public:
     // 解码器输出数据 - RGB格式
     pthread_rwlock_t camImglock[MAX_CHN_NUM];
     Mat camImg[MAX_CHN_NUM];
-
-
 protected:
 	
 private:
@@ -49,7 +47,8 @@ private:
     
     int32_t mChnannelNumber;
     uint32_t mPlayingChnId;
-    uint32_t mChannelId[MAX_CHN_NUM];
+    uint32_t mVideoChannelId[MAX_CHN_NUM];
+    uint32_t mAudioChannelId[MAX_CHN_NUM];
 
 	int bObjIsInited;
 	

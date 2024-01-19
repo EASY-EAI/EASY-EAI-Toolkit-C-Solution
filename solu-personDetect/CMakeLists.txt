@@ -18,12 +18,15 @@ set(CMAKE_TOOLCHAIN_FILE "${HOST_DIR}/share/buildroot/toolchainfile.cmake")
 
 project(${CURRENT_FOLDER})
 add_definitions(-Wall)
+# use c++ 11
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wall")
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fPIC -Wall")
+
 
 # ======================== easyeai_api =========================
 set(toolkit_root ${CMAKE_CURRENT_SOURCE_DIR}/../easyeai-api)
 # -I
 set(api_inc
-   ${CMAKE_SYSROOT}/usr/include/rkfacial
    ${toolkit_root}/algorithm_api/person_detect
    ${toolkit_root}/common_api/system_opt
    ${toolkit_root}/peripheral_api/camera
@@ -38,19 +41,24 @@ link_directories(${toolkit_root}/peripheral_api/display)
 LINK_LIBRARIES( person_detect rknn_api )
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( display easymedia rga )
-LINK_LIBRARIES( camera easymedia rga rkaiq )
+LINK_LIBRARIES( camera easymedia rga rkaiq)
 # ======================== easyeai_api =========================
 
 
 # ========================== custom ============================
 # solution project
+find_package(OpenCV REQUIRED)
 # -I
 set(custom_inc
    ${PROJECT_SOURCE_DIR}/include
-   )
+   ${OpenCV_INCLUDE_DIRS}
+)
 # -L
 link_directories(${PROJECT_SOURCE_DIR}/libs)
-# LINK_LIBRARIES( -lcustom )
+# -l
+set(custom_libs
+   ${OpenCV_LIBS}
+)
 # source code
 aux_source_directory(./src dir_srcs)
 # ========================== custom ============================
@@ -58,23 +66,7 @@ aux_source_directory(./src dir_srcs)
 #--------------------------
 # execute file
 #--------------------------
-add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
-target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-target_link_libraries(${CURRENT_FOLDER} 
-    -lopencv_calib3d 
-    -lopencv_core 
-    -lopencv_dnn 
-    -lopencv_features2d 
-    -lopencv_flann 
-    -lopencv_highgui 
-    -lopencv_imgcodecs 
-    -lopencv_imgproc 
-    -lopencv_ml 
-    -lopencv_objdetect 
-    -lopencv_photo 
-    -lopencv_shape 
-    -lopencv_stitching 
-    -lopencv_superres 
-    -lopencv_videoio 
-    -lopencv_video 
-    -lopencv_videostab)	#-l
+add_executable(${CURRENT_FOLDER} ${dir_srcs})
+target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})
+target_link_libraries(${CURRENT_FOLDER} ${custom_libs})
+

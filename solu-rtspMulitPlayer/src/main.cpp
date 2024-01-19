@@ -11,6 +11,7 @@
 //=====================  SDK  =====================
 #include "system_opt.h"
 #include "ini_wrapper.h"
+//#include "ipc.h"
 //=====================  PRJ  =====================
 #include "capturer/rtspCapturer.h"
 #include "player/player.h"
@@ -42,7 +43,7 @@ struct st_SysTask
 #define PROCESS_PLAYER_NAME   "player"
 #define PROCESS_RTSPCLIENT_NAME "rtspChannel"
 
-void ShowStatus( pid_t pid, int32_t status )
+static void ShowStatus( pid_t pid, int32_t status )
 {
   int flag = 1;
 
@@ -217,6 +218,15 @@ int main(int sdwArgc, char **pcArg)
 	uint8_t byTaskNum = 0;
 	pid_t waitpid;
 
+    if(1 == sdwArgc){
+        printf("\nerr: Missing parameter!\n");
+        printf("================= [usage] ==================\n");
+        printf("example:\n");
+        printf("\t%s Main\n", pcArg[0]);
+        printf("--------------------------------------------\n");
+        return 0;
+    }
+
 	memset(&st_TaskInfo, 0, sizeof(st_TaskInfo));
     strcpy(st_TaskInfo.progName, pcArg[0]+2);   // +2偏移掉"./"
 
@@ -232,17 +242,12 @@ int main(int sdwArgc, char **pcArg)
         ini_read_string(RTSP_CLIENT_PATH, "configInfo", "gateWay", gateWay, sizeof(gateWay));
         set_net_ipv4("eth0",ipv4, netMask, gateWay);
         
+        
         /* 2.根据配置文件，创建播放器x1，创建取流器xN */
         int chnNum = 0;
-        if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum))
-        {
-            // 2.1 创建进程间通信服务器
-            if(IPC_server_create(20)){
-                printf("IPCServer Create faild !!!\n");
-                return -1;
-            }
-            
-            // 2.2 创建播放器 x 1个
+        if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum)){
+                        
+            // 2.1 创建播放器 x 1个
             CreateProcess(PROCESS_PLAYER_NAME, &st_TaskInfo);
 
             // 2.2 创建Rtsp取流器 x n个，每一个都是一条独立进程

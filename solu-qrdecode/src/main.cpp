@@ -43,9 +43,9 @@ void *detect_thread_entry(void *para)
 		memset(&info, 0, sizeof(struct qrcode_info));
 		qr_decode(image_flip, &info);
 		
-		pResult->x1 = image_flip.cols - info.x2;
+		pResult->x1 = image.cols - info.x2;
 		pResult->y1 = info.y1;
-		pResult->x2 = image_flip.cols - info.x1;
+		pResult->x2 = image.cols - info.x1;
 		pResult->y2 = info.y2;
 		
 		printf("\n>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n");

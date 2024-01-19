@@ -1,12 +1,17 @@
 //=====================  PRJ  =====================
 #include "player.h"
+#include "wavInfo_opt.h"
 //=====================  SDK  =====================
 #include <rga/RgaApi.h>
 #include "mpp_mem.h"
 #include "system_opt.h"
 #include "ini_wrapper.h"
+#include "log_manager.h"
 #include "frame_queue.h"
 #include "endeCode_api.h"
+#include "wav_opt.h"
+#include "network.h"
+#include "audio.h"
 #include "disp.h"
 
 /* flip source image horizontally (around the vertical axis) */
@@ -31,6 +36,60 @@ typedef struct{
 	
 }Player_para_t;
 
+static double cpu_usage()
+{
+    static bool bIsFirstTimeGet = true;
+    static cpu_occupy_t cpu_stat1;
+    cpu_occupy_t cpu_stat2;
+
+    double cpu;
+
+    if(bIsFirstTimeGet){
+        bIsFirstTimeGet = false;
+        
+        get_cpu_occupy((cpu_occupy_t *)&cpu_stat1);
+        msleep(500);
+        get_cpu_occupy((cpu_occupy_t *)&cpu_stat2);
+    }else{
+        get_cpu_occupy((cpu_occupy_t *)&cpu_stat2);
+    }
+    //计算cpu使用率
+    cpu = cal_cpu_occupy ((cpu_occupy_t *)&cpu_stat1, (cpu_occupy_t *)&cpu_stat2);
+    memcpy(&cpu_stat1, &cpu_stat2, sizeof(cpu_occupy_t));
+
+    return cpu;
+}
+
+static void net_usage(int32_t *download, int32_t *upload)
+{
+    static bool bIsFirstTimeGet = true;
+    static int64_t recv_old, send_old;
+    int64_t recv_new, send_new;
+    static uint64_t preTime;
+    uint64_t curTime;
+
+    if(bIsFirstTimeGet){
+        bIsFirstTimeGet = false;
+        
+        preTime = get_timeval_ms();
+        get_dataflow_statistics("eth0", &recv_old, &send_old);
+        usleep(100*1000);
+        curTime = get_timeval_ms();
+        get_dataflow_statistics("eth0", &recv_new, &send_new);
+    }else{
+        curTime = get_timeval_ms();
+        get_dataflow_statistics("eth0", &recv_new, &send_new);
+    }
+    //计算上下行流量
+    *download = (int32_t)(((recv_new - recv_old)<<3/*x8*/)*1000/(curTime-preTime));
+    *upload   = (int32_t)(((send_new - send_old)<<3/*x8*/)*1000/(curTime-preTime));    
+    
+    recv_old = recv_new;
+    send_old = send_new;
+
+    preTime = curTime;
+}
+
 void *cruiseCtrl_thread(void *para)
 {
     // 播放器对象
@@ -40,6 +99,7 @@ void *cruiseCtrl_thread(void *para)
     int cout = 1;
 
     uint32_t chnId = 0;
+    int32_t download, upload;
 	while(1){
         if(NULL == pSelf){
             msleep(5);
@@ -61,6 +121,13 @@ void *cruiseCtrl_thread(void *para)
             //pSelf->displayAllChn();
             pSelf->displayCurChn();
         }
+#if 0
+        if(1 == (cout%100)){    //1ms执行, 且启动时执行
+            net_usage(&download, &upload);
+            printf("cpu: %.2f%%  mem: %.2f%%  download: %.2fMb/s  upload: %.2fMb/s\n", 
+                cpu_usage(), memory_usage(), (double)download/1000000, (double)upload/1000000);
+        }
+#endif
 
         // 计时操作
         cout++;
@@ -85,21 +152,23 @@ void *sendNALUtoDecoderThread(void *para)
     VideoNodeDesc nodeDesc;
     
     uint8_t *pTempBuf = NULL;
-    pTempBuf = (uint8_t *)mpp_malloc(char, MEM_BLOCK_SIZE_5M);
     while(1) {    
         if(!pTempBuf){
             pTempBuf = (uint8_t *)mpp_malloc(char, MEM_BLOCK_SIZE_5M);
             usleep(20 * 1000);
         }
         
+        if(NULL == pTempBuf)
+            continue;
+        
         // 通道合法性校验
-        if((0 <= chnId) && (chnId < MAX_CHN_NUM))
-        {
-            if(!pTempBuf){
+        if((0 <= chnId) && (chnId < MAX_CHN_NUM)) {
+            
+            if(video_channel_is_empty(chnId)){
                 usleep(20 * 1000);
                 continue;
             }
-        
+
             // 从环形共享内存队列中，取出节点描述信息，以及把帧数据放入临时内存中
             if(0 == get_node_from_video_channel(chnId, &nodeDesc, pTempBuf)){
 
@@ -154,13 +223,13 @@ static int32_t VideoPlayerHandle(void *pPlayer,  VideoFrameData *pData)
             return 0;
         }
     }else if(2/*[Chn 2]*/ == pData->channel){
-        if(curTime - preTime[pData->channel] >= 150000/* 每1.5ms一张 */){
+        if(curTime - preTime[pData->channel] >= 1500000/* 每1.5s一张 */){
             preTime[pData->channel] = curTime;
         }else{
             return 0;
         }
     }else if(3/*[Chn 3]*/ == pData->channel){
-        if(curTime - preTime[pData->channel] >= 70000/* 每700ms一张 */){
+        if(curTime - preTime[pData->channel] >= 70000/* 每70ms一张 */){
             preTime[pData->channel] = curTime;
         }else{
             return 0;
@@ -188,9 +257,93 @@ static int32_t VideoPlayerHandle(void *pPlayer,  VideoFrameData *pData)
     }
     if((0 == pData->err_info) && (0 == pData->discard)){
         RgaSURF_FORMAT vFmt = RK_FORMAT_YCbCr_420_SP;
+        printf("frame pts = %lld, curTimeStamp = %llu\n", pData->pts, get_timeval_ms());
+        //printf("width = %d, height = %d,[%dx%d]\n", pData->width, pData->height, pData->hor_stride, pData->ver_stride);
         pSelf->makeCamImg(pData->channel, pData->pBuf, vFmt, pData->width, pData->height, pData->hor_stride, pData->ver_stride);
     }
 
+    return 0;
+}
+
+void *sendAACtoDecoderThread(void *para)
+{
+    uint32_t *pChnId = (uint32_t *)para;
+    uint32_t chnId = *pChnId;
+    
+    AudioNodeDesc nodeDesc;
+    
+    uint8_t *pTempBuf = NULL;
+    while(1) {
+        if(!pTempBuf){
+            pTempBuf = (uint8_t *)mpp_malloc(char, MEM_BLOCK_SIZE_128K);
+            usleep(20 * 1000);
+        }
+        
+        if(NULL == pTempBuf)
+            continue;
+        
+        // 通道合法性校验
+        if((0 <= chnId) && (chnId < MAX_CHN_NUM)) {
+            
+            if(audio_channel_is_empty(chnId)){
+                usleep(20 * 1000);
+                continue;
+            }
+        
+            // 从环形共享内存队列中，取出节点描述信息，以及把帧数据放入临时内存中
+            if(0 == get_node_from_audio_channel(chnId, &nodeDesc, pTempBuf)){
+                //printf("get an AAC data: frameIndex = %u, dataLen = %u\n", nodeDesc.dwFrameIndex, nodeDesc.dwDataLen);
+                // 把AAC数据送入各自的解码通道
+                push_node_in_decMedia_audio_channel(chnId, &nodeDesc, pTempBuf);
+                usleep(5*1000);
+            } else {
+                usleep(15*1000);
+            }
+        
+        }else{
+            usleep(500*1000);
+        }
+
+    }
+
+    if(pTempBuf){
+        mpp_free(pTempBuf);
+        pTempBuf = NULL;
+    }
+
+	pthread_exit(NULL);
+}
+
+static int32_t AudioPlayerHandle(void *pPlayer,  AudioFrameData *pData)
+{
+    static bool bSndIsInited = false;
+    static snd_pcm_format_t audioFmt;
+    static int32_t audioChnNums = 0;    // 声道数量
+    static int32_t sample_rate  = 0;     // 音频采样率
+
+    if((0 != pData->err_info) || (0 != pData->discard)){
+        printf("[output] chn %02d ----- errinfo : %u discard : %u\n", pData->channel, pData->err_info, pData->discard);
+        return -1;
+    }
+#if 0   //调试打印信息
+    PRINT_DEBUG("audioDecChn[%02d] ----- channels: %d, sample_nb: %d, sample_size: %d, sample_rate: %d, %d", pData->channel,
+                    pData->aChannels, pData->sample_nb, pData->sample_size, pData->sample_rate, pData->bufSize);
+#endif
+    // 只要有参数不匹配，则需要重新初始化声卡
+    if((false == bSndIsInited) || (audioFmt != pData->sample_fmt) || (audioChnNums != pData->aChannels) || (sample_rate != pData->sample_rate)){
+        ao_exit();
+        bSndIsInited = false;
+        if(0 == ao_init(pData->sample_rate/pData->sample_nb, pData->sample_rate, pData->aChannels, pData->sample_fmt)){
+            bSndIsInited = true;
+            audioFmt     = pData->sample_fmt;
+            audioChnNums = pData->aChannels;
+            sample_rate  = pData->sample_rate;
+        }
+    }
+    // 声卡处于初始化好的状态
+    if(bSndIsInited){
+        //ao_writepcmBuf((uint8_t *)pData->pBuf, pData->bufSize, false);
+    }
     return 0;
 }
 
@@ -263,32 +416,44 @@ Player::Player(int iChnNum) :
 	create_decoder(mChnannelNumber);
 	// 3.2-初始化解码通道资源
     for(int i = 0; i < mChnannelNumber; i++){
-        mChannelId[i] = 0;
+        mVideoChannelId[i] = 0;
     }
     
 	// 3.3-向解码器申请解码通道
 	create_video_frame_queue_pool(mChnannelNumber);
+	create_audio_frame_queue_pool(mChnannelNumber);
     //create_audio_frame_queue_pool(mChnannelNumber);
-	pthread_t indataTid[MAX_CHN_NUM];
+	pthread_t videoIndataTid[MAX_CHN_NUM];
+	pthread_t audioIndataTid[MAX_CHN_NUM];
     for(int i = 0; i < mChnannelNumber; i++){
-    	if(0 == create_decMedia_channel(&mChannelId[i])){
+    	if(0 == create_decMedia_channel(&mVideoChannelId[i])){
     		//printf("============= [%d]time ==============\n", i);
-    		printf("create channel OK, chn = %u\n", mChannelId[i]);
+    		printf("create channel OK, chn = %u\n", mVideoChannelId[i]);
     		
     		// 3.4-往成功申请的通道绑定解码输出处理函数
-    		if(0 == mChannelId[i]){
-    	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
-                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
-            }else if (1 == mChannelId[i]){
-    	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
-                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
-            }else if (2 == mChannelId[i]){
-    	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
-                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
-            }else if (3 == mChannelId[i]){
-    	    	set_decMedia_channel_callback(mChannelId[i], VideoPlayerHandle, this);
-                CreateNormalThread(sendNALUtoDecoderThread, &mChannelId[i], &indataTid[i]);
+    		if(0 == mVideoChannelId[i]){
+    	    	set_decMedia_channel_callback(mVideoChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mVideoChannelId[i], &videoIndataTid[i]);
+            }else if (1 == mVideoChannelId[i]){
+    	    	set_decMedia_channel_callback(mVideoChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mVideoChannelId[i], &videoIndataTid[i]);
+            }else if (2 == mVideoChannelId[i]){
+    	    	set_decMedia_channel_callback(mVideoChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mVideoChannelId[i], &videoIndataTid[i]);
+            }else if (3 == mVideoChannelId[i]){
+    	    	set_decMedia_channel_callback(mVideoChannelId[i], VideoPlayerHandle, this);
+                CreateNormalThread(sendNALUtoDecoderThread, &mVideoChannelId[i], &videoIndataTid[i]);
             }
+    	}
+    }
+    for(int i = 0; i < mChnannelNumber; i++){
+    	if(0 == create_decMedia_audio_channel(&mAudioChannelId[i])){
+    		//printf("============= [%d]time ==============\n", i);
+    		printf("create audio channel OK, chn = %u\n", mAudioChannelId[i]);
+    		
+    		// 3.4-往成功申请的通道绑定解码输出处理函数
+	    	set_decMedia_audio_channel_callback(mAudioChannelId[i], AudioPlayerHandle, this);
+            CreateNormalThread(sendAACtoDecoderThread, &mAudioChannelId[i], &audioIndataTid[i]);
     	}
     }
     
@@ -306,7 +471,8 @@ Player::~Player()
 {
     int i;
     for(i = 0; mChnannelNumber < 1; i++){
-	    close_decMedia_channel(mChannelId[i]);
+	    close_decMedia_channel(mVideoChannelId[i]);
+	    close_decMedia_audio_channel(mAudioChannelId[i]);
     }
     deInit();
 }
@@ -343,7 +509,7 @@ void Player::displayCurChn()
     if(IsInited()){
         image = camImg[mPlayingChnId];
         
-        srcImage.fmt = RK_FORMAT_RGB_888;
+        srcImage.fmt = RK_FORMAT_BGR_888;
         srcImage.width = image.cols;
         srcImage.height = image.rows;
         srcImage.hor_stride = srcImage.width;
@@ -351,7 +517,7 @@ void Player::displayCurChn()
         srcImage.rotation = HAL_TRANSFORM_ROT_270;
         srcImage.pBuf = image.data;
         
-        dstImage.fmt = RK_FORMAT_RGB_888;
+        dstImage.fmt = RK_FORMAT_BGR_888;
         dstImage.width = SCREEN_WIDTH;
         dstImage.height = SCREEN_HEIGHT;
         dstImage.hor_stride = dstImage.width;
@@ -407,6 +573,10 @@ int playerInit()
     int ret = -1;
     int chnNum = 0;
     Player *pPlayer = NULL;
+    
+    // 0-初始化日志管理系统
+    log_manager_init(".", "Player");
+    
     if(0 == ini_read_int(RTSP_CLIENT_PATH, "configInfo", "enableChnNum", &chnNum)) {
         pPlayer = new Player(chnNum);
         if(NULL == pPlayer){
@@ -415,7 +585,7 @@ int playerInit()
             ret = 0;
         }
     }
-
+    
     if(-1 == ret)
         return ret;
     

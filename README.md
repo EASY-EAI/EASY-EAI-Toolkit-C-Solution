@@ -22,6 +22,10 @@ How to use：
 
 important update log:
 ---
+> 2024-01-19 : 
+> * Release easyeai-c-demo-0.3.10
+> * update easyeai-api-0.3.10
+>
 > 2023-01-11 : 
 > * Release easyeai-c-solution-0.2.2
 >   * [update] solution - rtspMulitPlayer

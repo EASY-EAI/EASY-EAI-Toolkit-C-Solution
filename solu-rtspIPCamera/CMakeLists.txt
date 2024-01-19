@@ -27,15 +27,14 @@ add_definitions(-Wall -Wpointer-arith)
 set(toolkit_root ${CMAKE_CURRENT_SOURCE_DIR}/../easyeai-api)
 # -I
 set(api_inc
-   ${CMAKE_SYSROOT}/usr/include/rkfacial
    ${toolkit_root}/algorithm_api/person_detect
    ${toolkit_root}/common_api/system_opt
    ${toolkit_root}/common_api/log_manager
    ${toolkit_root}/media_api/frame_queue
    ${toolkit_root}/media_api/endeCode_api
    ${toolkit_root}/netProtocol_api/rtsp
+   ${toolkit_root}/peripheral_api/audio
    ${toolkit_root}/peripheral_api/camera
-   ${toolkit_root}/peripheral_api/display
    )
 # -L
 link_directories(${toolkit_root}/algorithm_api/person_detect)
@@ -44,19 +43,17 @@ link_directories(${toolkit_root}/common_api/log_manager)
 link_directories(${toolkit_root}/media_api/frame_queue)
 link_directories(${toolkit_root}/media_api/endeCode_api)
 link_directories(${toolkit_root}/netProtocol_api/rtsp)
+link_directories(${toolkit_root}/peripheral_api/audio)
 link_directories(${toolkit_root}/peripheral_api/camera)
-link_directories(${toolkit_root}/peripheral_api/display)
 # -l
-LINK_LIBRARIES( rkfacial rkisp_api )
-LINK_LIBRARIES( system_opt pthread )
+LINK_LIBRARIES( system_opt )
 LINK_LIBRARIES( log_manager ini )
-LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp )
+LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp avcodec swresample avutil)
 LINK_LIBRARIES( frame_queue )
-LINK_LIBRARIES( rtsp liveMedia crypto ssl BasicUsageEnvironment UsageEnvironment groupsock )
-LINK_LIBRARIES( display easymedia rga )
+LINK_LIBRARIES( rtsp )
 LINK_LIBRARIES( camera easymedia rga rkaiq )
+LINK_LIBRARIES( audio easymedia asound pthread )
 # ======================== easyeai_api =========================
-
 
 
 # ========================== custom ============================
@@ -65,31 +62,19 @@ LINK_LIBRARIES( camera easymedia rga rkaiq )
 set(custom_inc
    ${PROJECT_SOURCE_DIR}/include
 #   ${PROJECT_SOURCE_DIR}/include/rga
-   )
+)
 # -L
 link_directories(
    ${PROJECT_SOURCE_DIR}/libs
 #   ${PROJECT_SOURCE_DIR}/libs/rga
-   )
-
-LINK_LIBRARIES(
-    -lopencv_calib3d 
-    -lopencv_core
-    -lopencv_dnn
-    -lopencv_features2d
-    -lopencv_flann
-    -lopencv_highgui
-    -lopencv_imgcodecs
-    -lopencv_imgproc
-    -lopencv_ml
-    -lopencv_objdetect
-    -lopencv_photo
-    -lopencv_shape
-    -lopencv_stitching
-    -lopencv_superres
-    -lopencv_videoio
-    -lopencv_video
-    -lopencv_videostab )
+)
+# -l
+set(custom_libs
+   ${OpenCV_LIBS}
+   pthread
+   crypto
+   ssl
+)
 # source code
 aux_source_directory(./src dir_srcs)
 aux_source_directory(./src/enCoder dir_srcs)
@@ -99,6 +84,7 @@ aux_source_directory(./src/rtspServer dir_srcs)
 #--------------------------
 # execute file
 #--------------------------
-add_executable(${CURRENT_FOLDER} ${dir_srcs})           #-o
-target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})  #-I
-#target_link_libraries(${CURRENT_FOLDER} )      #-l
+add_executable(${CURRENT_FOLDER} ${dir_srcs})
+target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})
+target_link_libraries(${CURRENT_FOLDER} ${custom_libs})
+

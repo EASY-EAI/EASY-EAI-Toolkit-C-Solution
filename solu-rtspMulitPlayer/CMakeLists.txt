@@ -27,69 +27,60 @@ add_definitions(-Wall -Wpointer-arith)
 set(toolkit_root ${CMAKE_CURRENT_SOURCE_DIR}/../easyeai-api)
 # -I
 set(api_inc
-   ${CMAKE_SYSROOT}/usr/include/rkfacial
-   ${toolkit_root}/algorithm_api/qrdecode
    ${toolkit_root}/common_api/system_opt
    ${toolkit_root}/common_api/ini_wrapper
+   ${toolkit_root}/common_api/log_manager
    ${toolkit_root}/media_api/frame_queue
    ${toolkit_root}/media_api/endeCode_api
+   ${toolkit_root}/media_api/wav_opt
    ${toolkit_root}/netProtocol_api/rtsp
    ${toolkit_root}/peripheral_api/display
    ${toolkit_root}/peripheral_api/network
+   ${toolkit_root}/peripheral_api/audio
    )
 # -L
-link_directories(${toolkit_root}/algorithm_api/qrdecode)
 link_directories(${toolkit_root}/common_api/system_opt)
 link_directories(${toolkit_root}/common_api/ini_wrapper)
+link_directories(${toolkit_root}/common_api/log_manager)
 link_directories(${toolkit_root}/media_api/frame_queue)
 link_directories(${toolkit_root}/media_api/endeCode_api)
+link_directories(${toolkit_root}/media_api/wav_opt)
 link_directories(${toolkit_root}/netProtocol_api/rtsp)
 link_directories(${toolkit_root}/peripheral_api/display)
 link_directories(${toolkit_root}/peripheral_api/network)
+link_directories(${toolkit_root}/peripheral_api/audio)
 # -l
-LINK_LIBRARIES( rkfacial rkisp_api )
-LINK_LIBRARIES( qrdecode zbar )
 LINK_LIBRARIES( system_opt pthread )
 LINK_LIBRARIES( ini_wrapper ini )
-LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp )
-LINK_LIBRARIES( frame_queue )
-LINK_LIBRARIES( rtsp liveMedia crypto ssl BasicUsageEnvironment UsageEnvironment groupsock )
+LINK_LIBRARIES( log_manager ini )
+LINK_LIBRARIES( frame_queue log_manager )
+LINK_LIBRARIES( endeCode_api easymedia rockchip_mpp avcodec avutil )
+LINK_LIBRARIES( wav_opt )
+LINK_LIBRARIES( rtsp )
 LINK_LIBRARIES( network )
 LINK_LIBRARIES( display easymedia rga )
+LINK_LIBRARIES( audio asound )
 # ======================== easyeai_api =========================
 
 
 # ========================== custom ============================
 # solution project
+find_package(OpenCV REQUIRED)
 # -I
 set(custom_inc
-   ${PROJECT_SOURCE_DIR}/include
-   ${PROJECT_SOURCE_DIR}/include/rga
-   )
+    ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include/rga
+    ${OpenCV_INCLUDE_DIRS}
+)
 # -L
 link_directories(
    ${PROJECT_SOURCE_DIR}/libs 
    ${PROJECT_SOURCE_DIR}/libs/rga
-   )
-       
-LINK_LIBRARIES( -lrga )
-LINK_LIBRARIES( -lopencv_calib3d 
-    -lopencv_core 
-    -lopencv_dnn 
-    -lopencv_features2d 
-    -lopencv_flann 
-    -lopencv_highgui 
-    -lopencv_imgcodecs 
-    -lopencv_imgproc 
-    -lopencv_ml 
-    -lopencv_objdetect 
-    -lopencv_photo 
-    -lopencv_shape 
-    -lopencv_stitching 
-    -lopencv_superres 
-    -lopencv_videoio 
-    -lopencv_video 
-    -lopencv_videostab )
+)
+# -l
+set(custom_libs
+   ${OpenCV_LIBS}
+)
 # source code
 aux_source_directory(./src dir_srcs)
 aux_source_directory(./src/capturer dir_srcs)
@@ -100,5 +91,6 @@ aux_source_directory(./src/player dir_srcs)
 # execute file
 #--------------------------
 add_executable(${CURRENT_FOLDER} ${dir_srcs})		#-o
-target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})	#-I
-#target_link_libraries(${CURRENT_FOLDER} )	#-l
+target_include_directories(${CURRENT_FOLDER} PRIVATE ${api_inc} ${custom_inc})
+target_link_libraries(${CURRENT_FOLDER} ${custom_libs})
+
