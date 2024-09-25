@@ -83,7 +83,7 @@ void *videoCapture_thread(void *para)
     int skip = 10;
     if(pPara){
         /* ============================= 初始化摄像头 ============================= */
-        ret = rgbcamera_init(CAMERA_WIDTH, CAMERA_HEIGHT, 90);
+        ret = rgbcamera_init(CAMERA_WIDTH, CAMERA_HEIGHT, 270);
         if (ret) {
             printf("error: %s, %d\n", __func__, __LINE__);
             bIsInited = false;

@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 #define CAMERA_HEIGHT	1280
 #define	IMGRATIO		3
 #define	IMAGE_SIZE		(CAMERA_WIDTH*CAMERA_HEIGHT*IMGRATIO)
-	ret = rgbcamera_init(CAMERA_WIDTH, CAMERA_HEIGHT, 90);
+	ret = rgbcamera_init(CAMERA_WIDTH, CAMERA_HEIGHT, 270);
 	if (ret) {
 		printf("error: %s, %d\n", __func__, __LINE__);
 		goto exit4;

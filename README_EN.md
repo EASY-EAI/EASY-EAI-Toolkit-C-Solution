@@ -22,6 +22,11 @@ How to use：
 
 important update log:
 ---
+> 2024-09-25 : 
+> * Release easyeai-c-Solution-2.0.0
+>   * update easyeai-api-2.0.0
+>   * [update] adjusted the camera angle for all solutions
+>
 > 2024-01-18 : 
 > * Release easyeai-c-Solution-1.2.0
 >   * update easyeai-api-1.2.10

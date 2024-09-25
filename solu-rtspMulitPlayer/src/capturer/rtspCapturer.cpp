@@ -108,6 +108,7 @@ int32_t VideoHandle(void *pCapturer, RTSPVideoDesc_t *pDesc, uint8_t *pData)
             NodeDesc.stActRegion.dwY     = 0;
             NodeDesc.stActRegion.dwWidth = NodeDesc.dwWidth;
             NodeDesc.stActRegion.dwHeight= NodeDesc.dwHeight;
+            //printf("width = %d, height = %d\n", NodeDesc.dwWidth, NodeDesc.dwHeight);
             push_node_to_video_channel(pSelf->channelId(), &NodeDesc, pData);
         }
     }
